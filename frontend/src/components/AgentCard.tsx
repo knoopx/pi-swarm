@@ -184,7 +184,15 @@ export function AgentCard({
                 Files ({agent.modifiedFiles?.length || 0})
               </TabsTrigger>
               <TabsTrigger value="diff" className="text-xs">
-                Diff
+                Review
+                {(agent.modifiedFiles?.length || 0) > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="ml-1.5 text-[10px] px-1.5 py-0"
+                  >
+                    {agent.modifiedFiles?.length || 0}
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
 
