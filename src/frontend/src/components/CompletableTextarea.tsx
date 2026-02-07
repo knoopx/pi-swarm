@@ -40,6 +40,7 @@ const CompletableTextarea = React.forwardRef<
     const [showCompletions, setShowCompletions] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [searchQuery, setSearchQuery] = useState("");
+    const [popupStyle, setPopupStyle] = useState<React.CSSProperties>({});
     const containerRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const popupRef = useRef<HTMLDivElement>(null);
@@ -76,13 +77,6 @@ const CompletableTextarea = React.forwardRef<
         const lastNewline = textBeforeCursor.lastIndexOf("\n");
         const lineStart = lastNewline + 1;
         const currentLine = textBeforeCursor.slice(lineStart);
-
-        console.log("[CompletableTextarea] checkForSlashTrigger:", {
-          text,
-          cursorPos,
-          currentLine,
-          completionsCount: completions.length,
-        });
 
         // Check if current line starts with /
         if (currentLine.startsWith("/")) {
@@ -216,6 +210,39 @@ const CompletableTextarea = React.forwardRef<
         document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // Calculate popup position based on available space
+    useEffect(() => {
+      if (showCompletions && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const popupHeight = 300; // max-h-[300px]
+        const popupWidth = rect.width;
+        const margin = 4;
+
+        // Calculate vertical position
+        const spaceAbove = rect.top;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const showBelow = spaceAbove < popupHeight && spaceBelow > spaceAbove;
+
+        // Calculate horizontal position - keep within viewport
+        let left = rect.left;
+        if (left + popupWidth > window.innerWidth) {
+          left = window.innerWidth - popupWidth - margin;
+        }
+        if (left < margin) {
+          left = margin;
+        }
+
+        setPopupStyle({
+          position: "fixed",
+          left: `${left}px`,
+          width: `${popupWidth}px`,
+          ...(showBelow
+            ? { top: `${rect.bottom + margin}px` }
+            : { bottom: `${window.innerHeight - rect.top + margin}px` }),
+        });
+      }
+    }, [showCompletions]);
+
     // Scroll selected item into view
     useEffect(() => {
       if (showCompletions && popupRef.current) {
@@ -263,7 +290,8 @@ const CompletableTextarea = React.forwardRef<
         {showCompletions && filteredCompletions.length > 0 && (
           <div
             ref={popupRef}
-            className="absolute bottom-full left-0 right-0 mb-1 z-50 max-h-[300px] overflow-auto rounded-md border bg-popover p-1 shadow-md"
+            style={popupStyle}
+            className="z-50 max-h-[300px] overflow-auto rounded-md border bg-popover p-1 shadow-md"
           >
             <Command className="bg-transparent">
               <CommandList>
