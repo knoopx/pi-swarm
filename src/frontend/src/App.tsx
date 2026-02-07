@@ -125,6 +125,7 @@ export default function App() {
     stopAgent,
     resumeAgent,
     instructAgent,
+    interruptAgent,
     setAgentModel,
     getDiff,
     mergeAgent,
@@ -530,25 +531,6 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <ModelSelector
-                      models={models}
-                      value={`${selectedAgent.provider}/${selectedAgent.model}`}
-                      onChange={(value) => {
-                        const parsed = parseModelString(value);
-                        if (parsed) {
-                          setAgentModel(
-                            selectedAgent.id,
-                            parsed.provider,
-                            parsed.modelId,
-                          );
-                        }
-                      }}
-                      disabled={selectedAgent.status === "running"}
-                      className="h-8 w-[180px]"
-                    />
-
-                    <div className="h-6 w-px bg-border mx-1" />
-
                     <AgentActions
                       agent={selectedAgent}
                       isSpecAgent={isSelectedSpecAgent}
@@ -629,7 +611,16 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                   selectedAgent.status === "completed" ||
                   selectedAgent.status === "stopped" ||
                   selectedAgent.status === "waiting") && (
-                  <div className="border-t p-4 bg-card/30 shrink-0">
+                  <div className="border-t p-4 bg-card/30 shrink-0 space-y-3">
+                    {selectedAgent.status === "running" && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Working...</span>
+                        <span className="text-xs opacity-60">
+                          (send a message to steer or interrupt)
+                        </span>
+                      </div>
+                    )}
                     <InstructInput
                       onSubmit={(msg) => {
                         if (selectedAgent.status === "stopped") {
@@ -638,13 +629,33 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                           instructAgent(selectedAgent.id, msg);
                         }
                       }}
+                      onInterrupt={
+                        selectedAgent.status === "running"
+                          ? (msg) => interruptAgent(selectedAgent.id, msg)
+                          : undefined
+                      }
                       disabled={false}
                       placeholder={
                         selectedAgent.status === "stopped"
                           ? "Send instruction to resume... (Ctrl+Enter)"
-                          : "Send follow-up instruction... (Ctrl+Enter)"
+                          : selectedAgent.status === "running"
+                            ? "Steer agent... (Ctrl+Enter to send, Ctrl+Shift+Enter to interrupt)"
+                            : "Send follow-up instruction... (Ctrl+Enter)"
                       }
                       completions={completions}
+                      models={models}
+                      selectedModel={`${selectedAgent.provider}/${selectedAgent.model}`}
+                      onModelChange={(value) => {
+                        const parsed = parseModelString(value);
+                        if (parsed) {
+                          setAgentModel(
+                            selectedAgent.id,
+                            parsed.provider,
+                            parsed.modelId,
+                          );
+                        }
+                      }}
+                      modelDisabled={selectedAgent.status === "running"}
                     />
                   </div>
                 )}
@@ -811,11 +822,17 @@ function AgentActions({
 
 function InstructInput({
   onSubmit,
+  onInterrupt,
   disabled,
   placeholder = "Send follow-up instruction... (Ctrl+Enter)",
   completions = [],
+  models = [],
+  selectedModel,
+  onModelChange,
+  modelDisabled,
 }: {
   onSubmit: (msg: string) => void;
+  onInterrupt?: (msg: string) => void;
   disabled?: boolean;
   placeholder?: string;
   completions?: {
@@ -825,12 +842,23 @@ function InstructInput({
     location?: string;
     path?: string;
   }[];
+  models?: { provider: string; modelId: string; name: string }[];
+  selectedModel?: string;
+  onModelChange?: (value: string) => void;
+  modelDisabled?: boolean;
 }) {
   const [value, setValue] = useState("");
 
   const handleSubmit = () => {
     if (value.trim()) {
       onSubmit(value);
+      setValue("");
+    }
+  };
+
+  const handleInterrupt = () => {
+    if (value.trim() && onInterrupt) {
+      onInterrupt(value);
       setValue("");
     }
   };
@@ -847,6 +875,32 @@ function InstructInput({
         rows={1}
         disabled={disabled}
       />
+      {models.length > 0 && selectedModel && onModelChange && (
+        <ModelSelector
+          models={models}
+          value={selectedModel}
+          onChange={onModelChange}
+          disabled={modelDisabled}
+          className="h-[44px] w-[160px]"
+        />
+      )}
+      {onInterrupt && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={handleInterrupt}
+              disabled={!value.trim() || disabled}
+              variant="destructive"
+              className="h-[44px] px-3"
+            >
+              <Zap className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Interrupt and steer (Ctrl+Shift+Enter)
+          </TooltipContent>
+        </Tooltip>
+      )}
       <Button
         onClick={handleSubmit}
         disabled={!value.trim() || disabled}

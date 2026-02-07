@@ -415,6 +415,38 @@ async function instructAgent(agent: Agent, instruction: string): Promise<void> {
   await updateAndPersistAgent(agent);
 }
 
+async function interruptAgent(
+  agent: Agent,
+  instruction: string,
+): Promise<void> {
+  // Abort current operation if running
+  if (agent.session && agent.status === "running") {
+    try {
+      await agent.session.abort();
+    } catch {
+      // Ignore abort errors
+    }
+  }
+
+  // Add a visual separator in the output
+  agent.output +=
+    JSON.stringify({ type: "interrupt", message: "Interrupted by user" }) +
+    "\n";
+
+  // Resume with the new steering instruction
+  await createAgentSessionAndSubscribe(agent, { resume: true });
+
+  console.log(
+    `[Agent ${agent.id}] Interrupted with instruction:`,
+    instruction.substring(0, 200),
+  );
+  agent.session!.prompt(instruction).catch((err) => {
+    handleAgentError(agent, err, "interrupt error");
+  });
+
+  await updateAndPersistAgent(agent);
+}
+
 async function setAgentModel(
   agent: Agent,
   provider: string,
@@ -577,6 +609,21 @@ async function handleWsCommand(
           return;
         }
         await instructAgent(agent, message.instruction as string);
+        sendResponse(ws, id, true, serializeAgent(agent));
+        break;
+      }
+
+      case "interrupt_agent": {
+        const agent = agents.get(message.agentId as string);
+        if (!agent) {
+          sendResponse(ws, id, false, undefined, "Agent not found");
+          return;
+        }
+        if (agent.status !== "running") {
+          sendResponse(ws, id, false, undefined, "Agent is not running");
+          return;
+        }
+        await interruptAgent(agent, message.instruction as string);
         sendResponse(ws, id, true, serializeAgent(agent));
         break;
       }
