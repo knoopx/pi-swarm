@@ -275,15 +275,26 @@ const CompletableTextarea = React.forwardRef<
       }
     };
 
+    // Extract flex classes for wrapper, keep rest for textarea
+    const flexClasses =
+      className
+        ?.split(" ")
+        .filter((c) => c.startsWith("flex-"))
+        .join(" ") || "";
+    const textareaClasses = className
+      ?.split(" ")
+      .filter((c) => !c.startsWith("flex-"))
+      .join(" ");
+
     return (
-      <div ref={containerRef} className="relative">
+      <div ref={containerRef} className={cn("relative", flexClasses)}>
         <Textarea
           ref={setRefs}
           value={value}
           onChange={handleChange}
           onClick={handleClick}
           onKeyDown={handleKeyDown}
-          className={className}
+          className={textareaClasses}
           disabled={disabled}
           {...props}
         />
