@@ -15,10 +15,19 @@ import {
   canAgentBeStarted,
   canAgentBeStopped,
   canAgentBeMerged,
+  canAgentBeDeleted,
+  canAgentBeReset,
   transitionToRunning,
   transitionToStopped,
   transitionToWaiting,
   transitionToError,
+  transitionToCompleted,
+  resetAgentForRetry,
+  clearAgentOutput,
+  filterAgentsByStatus,
+  getCleanupCandidates,
+  getStaleAgents,
+  getAgentIds,
   buildWorkspacePath,
   generateNameFromInstruction,
   type Agent,
@@ -638,7 +647,7 @@ describe("Core", () => {
       describe("when building path", () => {
         it("then returns correct workspace path", () => {
           expect(buildWorkspacePath("/home/user/project", "abc123")).toBe(
-            "/home/user/project/workspaces/abc123",
+            "/home/user/project/.pi/swarm/workspaces/abc123",
           );
         });
       });
@@ -646,9 +655,10 @@ describe("Core", () => {
 
     describe("given basePath with trailing slash", () => {
       describe("when building path", () => {
-        it("then handles it correctly", () => {
+        it("then includes double slash from trailing slash", () => {
+          // Note: trailing slash in basePath results in double slash
           expect(buildWorkspacePath("/home/user/project/", "abc123")).toBe(
-            "/home/user/project//workspaces/abc123",
+            "/home/user/project//.pi/swarm/workspaces/abc123",
           );
         });
       });
@@ -718,6 +728,317 @@ describe("Core", () => {
         it("then returns that word", () => {
           expect(generateNameFromInstruction("Refactor")).toBe("refactor");
         });
+      });
+    });
+  });
+
+  describe("transitionToCompleted", () => {
+    describe("given a waiting agent", () => {
+      const agent = createTestAgent({ status: "waiting" });
+
+      describe("when transitioning to completed", () => {
+        it("then returns agent with completed status", () => {
+          const result = transitionToCompleted(agent);
+          expect(result.status).toBe("completed");
+        });
+
+        it("then updates the updatedAt timestamp", () => {
+          const result = transitionToCompleted(agent);
+          expect(result.updatedAt).not.toBe(agent.updatedAt);
+        });
+
+        it("then does not mutate original agent", () => {
+          transitionToCompleted(agent);
+          expect(agent.status).toBe("waiting");
+        });
+      });
+    });
+  });
+
+  describe("resetAgentForRetry", () => {
+    describe("given an error agent with output", () => {
+      const agent = createTestAgent({
+        status: "error",
+        output: '{"type":"error"}\n',
+        modifiedFiles: ["file1.ts", "file2.ts"],
+        diffStat: "2 files changed",
+      });
+
+      describe("when resetting for retry", () => {
+        it("then sets status to pending", () => {
+          const result = resetAgentForRetry(agent);
+          expect(result.status).toBe("pending");
+        });
+
+        it("then clears output", () => {
+          const result = resetAgentForRetry(agent);
+          expect(result.output).toBe("");
+        });
+
+        it("then clears modifiedFiles", () => {
+          const result = resetAgentForRetry(agent);
+          expect(result.modifiedFiles).toEqual([]);
+        });
+
+        it("then clears diffStat", () => {
+          const result = resetAgentForRetry(agent);
+          expect(result.diffStat).toBe("");
+        });
+
+        it("then updates timestamp", () => {
+          const result = resetAgentForRetry(agent);
+          expect(result.updatedAt).not.toBe(agent.updatedAt);
+        });
+
+        it("then preserves other properties", () => {
+          const result = resetAgentForRetry(agent);
+          expect(result.id).toBe(agent.id);
+          expect(result.name).toBe(agent.name);
+          expect(result.instruction).toBe(agent.instruction);
+        });
+      });
+    });
+  });
+
+  describe("clearAgentOutput", () => {
+    describe("given agent with output", () => {
+      const agent = createTestAgent({
+        output: '{"type":"test"}\n{"type":"test2"}\n',
+      });
+
+      describe("when clearing output", () => {
+        it("then sets output to empty string", () => {
+          const result = clearAgentOutput(agent);
+          expect(result.output).toBe("");
+        });
+
+        it("then updates timestamp", () => {
+          const result = clearAgentOutput(agent);
+          expect(result.updatedAt).not.toBe(agent.updatedAt);
+        });
+
+        it("then preserves other properties", () => {
+          const result = clearAgentOutput(agent);
+          expect(result.status).toBe(agent.status);
+          expect(result.instruction).toBe(agent.instruction);
+        });
+      });
+    });
+  });
+
+  describe("canAgentBeDeleted", () => {
+    const deletableStatuses: Agent["status"][] = [
+      "pending",
+      "completed",
+      "waiting",
+      "stopped",
+      "error",
+    ];
+
+    deletableStatuses.forEach((status) => {
+      describe(`given agent with status "${status}"`, () => {
+        it("then returns true", () => {
+          const agent = createTestAgent({ status });
+          expect(canAgentBeDeleted(agent)).toBe(true);
+        });
+      });
+    });
+
+    describe("given agent with status running", () => {
+      it("then returns false", () => {
+        const agent = createTestAgent({ status: "running" });
+        expect(canAgentBeDeleted(agent)).toBe(false);
+      });
+    });
+  });
+
+  describe("canAgentBeReset", () => {
+    const resettableStatuses: Agent["status"][] = [
+      "error",
+      "stopped",
+      "completed",
+    ];
+    const nonResettableStatuses: Agent["status"][] = [
+      "pending",
+      "running",
+      "waiting",
+    ];
+
+    resettableStatuses.forEach((status) => {
+      describe(`given agent with status "${status}"`, () => {
+        it("then returns true", () => {
+          const agent = createTestAgent({ status });
+          expect(canAgentBeReset(agent)).toBe(true);
+        });
+      });
+    });
+
+    nonResettableStatuses.forEach((status) => {
+      describe(`given agent with status "${status}"`, () => {
+        it("then returns false", () => {
+          const agent = createTestAgent({ status });
+          expect(canAgentBeReset(agent)).toBe(false);
+        });
+      });
+    });
+  });
+
+  describe("filterAgentsByStatus", () => {
+    const agents = [
+      createTestAgent({ id: "1", status: "pending" }),
+      createTestAgent({ id: "2", status: "running" }),
+      createTestAgent({ id: "3", status: "completed" }),
+      createTestAgent({ id: "4", status: "error" }),
+      createTestAgent({ id: "5", status: "waiting" }),
+    ];
+
+    describe("given single status filter", () => {
+      it("then returns only agents with that status", () => {
+        const result = filterAgentsByStatus(agents, ["running"]);
+        expect(result).toHaveLength(1);
+        expect(result[0].id).toBe("2");
+      });
+    });
+
+    describe("given multiple status filter", () => {
+      it("then returns agents with any of those statuses", () => {
+        const result = filterAgentsByStatus(agents, ["completed", "error"]);
+        expect(result).toHaveLength(2);
+        expect(result.map((a) => a.id)).toEqual(["3", "4"]);
+      });
+    });
+
+    describe("given empty status filter", () => {
+      it("then returns empty array", () => {
+        const result = filterAgentsByStatus(agents, []);
+        expect(result).toHaveLength(0);
+      });
+    });
+
+    describe("given empty agents array", () => {
+      it("then returns empty array", () => {
+        const result = filterAgentsByStatus([], ["running"]);
+        expect(result).toHaveLength(0);
+      });
+    });
+  });
+
+  describe("getCleanupCandidates", () => {
+    describe("given mixed status agents", () => {
+      const agents = [
+        createTestAgent({ id: "1", status: "pending" }),
+        createTestAgent({ id: "2", status: "running" }),
+        createTestAgent({ id: "3", status: "completed" }),
+        createTestAgent({ id: "4", status: "error" }),
+        createTestAgent({ id: "5", status: "waiting" }),
+        createTestAgent({ id: "6", status: "stopped" }),
+      ];
+
+      it("then returns only completed and error agents", () => {
+        const result = getCleanupCandidates(agents);
+        expect(result).toHaveLength(2);
+        expect(result.map((a) => a.id)).toEqual(["3", "4"]);
+      });
+    });
+
+    describe("given no cleanup candidates", () => {
+      const agents = [
+        createTestAgent({ id: "1", status: "pending" }),
+        createTestAgent({ id: "2", status: "running" }),
+      ];
+
+      it("then returns empty array", () => {
+        const result = getCleanupCandidates(agents);
+        expect(result).toHaveLength(0);
+      });
+    });
+
+    describe("given empty agents array", () => {
+      it("then returns empty array", () => {
+        const result = getCleanupCandidates([]);
+        expect(result).toHaveLength(0);
+      });
+    });
+  });
+
+  describe("getStaleAgents", () => {
+    const now = Date.now();
+    const oneHourAgo = new Date(now - 60 * 60 * 1000).toISOString();
+    const twoHoursAgo = new Date(now - 2 * 60 * 60 * 1000).toISOString();
+    const fiveMinutesAgo = new Date(now - 5 * 60 * 1000).toISOString();
+
+    describe("given agents with various update times", () => {
+      const agents = [
+        createTestAgent({ id: "1", updatedAt: twoHoursAgo }),
+        createTestAgent({ id: "2", updatedAt: oneHourAgo }),
+        createTestAgent({ id: "3", updatedAt: fiveMinutesAgo }),
+      ];
+
+      describe("when threshold is 90 minutes", () => {
+        const thresholdMs = 90 * 60 * 1000;
+
+        it("then returns agents older than threshold", () => {
+          const result = getStaleAgents(agents, thresholdMs);
+          expect(result).toHaveLength(1);
+          expect(result[0].id).toBe("1");
+        });
+      });
+
+      describe("when threshold is 30 minutes", () => {
+        const thresholdMs = 30 * 60 * 1000;
+
+        it("then returns agents older than threshold", () => {
+          const result = getStaleAgents(agents, thresholdMs);
+          expect(result).toHaveLength(2);
+          expect(result.map((a) => a.id)).toEqual(["1", "2"]);
+        });
+      });
+
+      describe("when threshold is 3 hours", () => {
+        const thresholdMs = 3 * 60 * 60 * 1000;
+
+        it("then returns no agents", () => {
+          const result = getStaleAgents(agents, thresholdMs);
+          expect(result).toHaveLength(0);
+        });
+      });
+    });
+
+    describe("given empty agents array", () => {
+      it("then returns empty array", () => {
+        const result = getStaleAgents([], 60000);
+        expect(result).toHaveLength(0);
+      });
+    });
+  });
+
+  describe("getAgentIds", () => {
+    describe("given multiple agents", () => {
+      const agents = [
+        createTestAgent({ id: "agent-1" }),
+        createTestAgent({ id: "agent-2" }),
+        createTestAgent({ id: "agent-3" }),
+      ];
+
+      it("then returns array of ids", () => {
+        const result = getAgentIds(agents);
+        expect(result).toEqual(["agent-1", "agent-2", "agent-3"]);
+      });
+    });
+
+    describe("given empty agents array", () => {
+      it("then returns empty array", () => {
+        const result = getAgentIds([]);
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe("given single agent", () => {
+      const agents = [createTestAgent({ id: "single-agent" })];
+
+      it("then returns array with single id", () => {
+        const result = getAgentIds(agents);
+        expect(result).toEqual(["single-agent"]);
       });
     });
   });

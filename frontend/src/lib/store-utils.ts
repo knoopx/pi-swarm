@@ -82,3 +82,41 @@ export function selectAgentsByStatus(
 export function isSpecAgent(agent: Agent): boolean {
   return agent.name.startsWith("spec-");
 }
+
+// Batch operations
+
+export function handleBatchDelete(
+  state: StoreState,
+  agentIds: string[],
+): StoreState {
+  const idsSet = new Set(agentIds);
+  return {
+    ...state,
+    agents: state.agents.filter((a) => !idsSet.has(a.id)),
+    selectedId:
+      state.selectedId && idsSet.has(state.selectedId)
+        ? null
+        : state.selectedId,
+  };
+}
+
+export function selectCompletedAgents(agents: Agent[]): Agent[] {
+  return agents.filter((a) => a.status === "completed" || a.status === "error");
+}
+
+export function selectDeletableAgents(agents: Agent[]): Agent[] {
+  return agents.filter((a) => a.status !== "running");
+}
+
+export function selectMergeableAgents(agents: Agent[]): Agent[] {
+  return agents.filter(
+    (a) =>
+      a.status === "completed" ||
+      a.status === "waiting" ||
+      a.status === "stopped",
+  );
+}
+
+export function getAgentIds(agents: Agent[]): string[] {
+  return agents.map((a) => a.id);
+}

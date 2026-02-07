@@ -4,9 +4,14 @@ import {
   handleAgentUpdated,
   handleAgentDeleted,
   handleAgentEvent,
+  handleBatchDelete,
   selectAgentById,
   selectRunningAgents,
   selectAgentsByStatus,
+  selectCompletedAgents,
+  selectDeletableAgents,
+  selectMergeableAgents,
+  getAgentIds,
   isSpecAgent,
   type StoreState,
 } from "./store-utils";
@@ -489,6 +494,209 @@ describe("store-utils", () => {
         expect(formatModelString("openai", "gpt-4/turbo")).toBe(
           "openai/gpt-4/turbo",
         );
+      });
+    });
+  });
+
+  describe("handleBatchDelete", () => {
+    describe("given multiple agents to delete", () => {
+      const agents = [
+        createTestAgent({ id: "agent-1" }),
+        createTestAgent({ id: "agent-2" }),
+        createTestAgent({ id: "agent-3" }),
+        createTestAgent({ id: "agent-4" }),
+      ];
+      const state = createTestState({ agents });
+
+      describe("when deleting subset of agents", () => {
+        it("then removes only specified agents", () => {
+          const newState = handleBatchDelete(state, ["agent-1", "agent-3"]);
+          expect(newState.agents).toHaveLength(2);
+          expect(newState.agents.map((a) => a.id)).toEqual([
+            "agent-2",
+            "agent-4",
+          ]);
+        });
+      });
+
+      describe("when deleting all agents", () => {
+        it("then removes all agents", () => {
+          const newState = handleBatchDelete(state, [
+            "agent-1",
+            "agent-2",
+            "agent-3",
+            "agent-4",
+          ]);
+          expect(newState.agents).toHaveLength(0);
+        });
+      });
+
+      describe("when deleting nonexistent agents", () => {
+        it("then ignores nonexistent ids", () => {
+          const newState = handleBatchDelete(state, [
+            "nonexistent-1",
+            "nonexistent-2",
+          ]);
+          expect(newState.agents).toHaveLength(4);
+        });
+      });
+    });
+
+    describe("given selected agent is in delete list", () => {
+      const agents = [
+        createTestAgent({ id: "agent-1" }),
+        createTestAgent({ id: "agent-2" }),
+      ];
+      const state = createTestState({ agents, selectedId: "agent-1" });
+
+      describe("when deleting selected agent", () => {
+        it("then clears selectedId", () => {
+          const newState = handleBatchDelete(state, ["agent-1"]);
+          expect(newState.selectedId).toBeNull();
+        });
+      });
+    });
+
+    describe("given selected agent is not in delete list", () => {
+      const agents = [
+        createTestAgent({ id: "agent-1" }),
+        createTestAgent({ id: "agent-2" }),
+      ];
+      const state = createTestState({ agents, selectedId: "agent-2" });
+
+      describe("when deleting other agents", () => {
+        it("then preserves selectedId", () => {
+          const newState = handleBatchDelete(state, ["agent-1"]);
+          expect(newState.selectedId).toBe("agent-2");
+        });
+      });
+    });
+
+    describe("given empty delete list", () => {
+      const agents = [createTestAgent({ id: "agent-1" })];
+      const state = createTestState({ agents });
+
+      describe("when deleting nothing", () => {
+        it("then preserves all agents", () => {
+          const newState = handleBatchDelete(state, []);
+          expect(newState.agents).toHaveLength(1);
+        });
+      });
+    });
+  });
+
+  describe("selectCompletedAgents", () => {
+    describe("given agents with mixed statuses", () => {
+      const agents = [
+        createTestAgent({ id: "1", status: "pending" }),
+        createTestAgent({ id: "2", status: "running" }),
+        createTestAgent({ id: "3", status: "completed" }),
+        createTestAgent({ id: "4", status: "error" }),
+        createTestAgent({ id: "5", status: "waiting" }),
+        createTestAgent({ id: "6", status: "stopped" }),
+      ];
+
+      it("then returns only completed and error agents", () => {
+        const result = selectCompletedAgents(agents);
+        expect(result).toHaveLength(2);
+        expect(result.map((a) => a.id)).toEqual(["3", "4"]);
+      });
+    });
+
+    describe("given no completed agents", () => {
+      const agents = [
+        createTestAgent({ id: "1", status: "pending" }),
+        createTestAgent({ id: "2", status: "running" }),
+      ];
+
+      it("then returns empty array", () => {
+        const result = selectCompletedAgents(agents);
+        expect(result).toHaveLength(0);
+      });
+    });
+  });
+
+  describe("selectDeletableAgents", () => {
+    describe("given agents with mixed statuses", () => {
+      const agents = [
+        createTestAgent({ id: "1", status: "pending" }),
+        createTestAgent({ id: "2", status: "running" }),
+        createTestAgent({ id: "3", status: "completed" }),
+        createTestAgent({ id: "4", status: "error" }),
+        createTestAgent({ id: "5", status: "waiting" }),
+        createTestAgent({ id: "6", status: "stopped" }),
+      ];
+
+      it("then returns all agents except running", () => {
+        const result = selectDeletableAgents(agents);
+        expect(result).toHaveLength(5);
+        expect(result.map((a) => a.id)).toEqual(["1", "3", "4", "5", "6"]);
+      });
+    });
+
+    describe("given only running agents", () => {
+      const agents = [
+        createTestAgent({ id: "1", status: "running" }),
+        createTestAgent({ id: "2", status: "running" }),
+      ];
+
+      it("then returns empty array", () => {
+        const result = selectDeletableAgents(agents);
+        expect(result).toHaveLength(0);
+      });
+    });
+  });
+
+  describe("selectMergeableAgents", () => {
+    describe("given agents with mixed statuses", () => {
+      const agents = [
+        createTestAgent({ id: "1", status: "pending" }),
+        createTestAgent({ id: "2", status: "running" }),
+        createTestAgent({ id: "3", status: "completed" }),
+        createTestAgent({ id: "4", status: "error" }),
+        createTestAgent({ id: "5", status: "waiting" }),
+        createTestAgent({ id: "6", status: "stopped" }),
+      ];
+
+      it("then returns completed, waiting, and stopped agents", () => {
+        const result = selectMergeableAgents(agents);
+        expect(result).toHaveLength(3);
+        expect(result.map((a) => a.id)).toEqual(["3", "5", "6"]);
+      });
+    });
+
+    describe("given no mergeable agents", () => {
+      const agents = [
+        createTestAgent({ id: "1", status: "pending" }),
+        createTestAgent({ id: "2", status: "running" }),
+        createTestAgent({ id: "3", status: "error" }),
+      ];
+
+      it("then returns empty array", () => {
+        const result = selectMergeableAgents(agents);
+        expect(result).toHaveLength(0);
+      });
+    });
+  });
+
+  describe("getAgentIds", () => {
+    describe("given multiple agents", () => {
+      const agents = [
+        createTestAgent({ id: "agent-1" }),
+        createTestAgent({ id: "agent-2" }),
+        createTestAgent({ id: "agent-3" }),
+      ];
+
+      it("then returns array of all ids", () => {
+        const result = getAgentIds(agents);
+        expect(result).toEqual(["agent-1", "agent-2", "agent-3"]);
+      });
+    });
+
+    describe("given empty array", () => {
+      it("then returns empty array", () => {
+        const result = getAgentIds([]);
+        expect(result).toEqual([]);
       });
     });
   });

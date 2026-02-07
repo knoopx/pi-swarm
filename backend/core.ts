@@ -184,6 +184,84 @@ export function transitionToError(agent: Agent, errorMessage: string): Agent {
   };
 }
 
+// Merge result type
+export interface MergeResult {
+  success: boolean;
+  error?: string;
+}
+
+// Transition to completed (after successful merge)
+export function transitionToCompleted(agent: Agent): Agent {
+  return {
+    ...agent,
+    status: "completed",
+    updatedAt: nowTs(),
+  };
+}
+
+// Reset agent for retry
+export function resetAgentForRetry(agent: Agent): Agent {
+  return {
+    ...agent,
+    status: "pending",
+    output: "",
+    modifiedFiles: [],
+    diffStat: "",
+    updatedAt: nowTs(),
+  };
+}
+
+// Clear agent output (useful for restart)
+export function clearAgentOutput(agent: Agent): Agent {
+  return {
+    ...agent,
+    output: "",
+    updatedAt: nowTs(),
+  };
+}
+
+// Check if agent can be deleted
+export function canAgentBeDeleted(agent: Agent): boolean {
+  // Can delete any agent that is not currently running
+  return agent.status !== "running";
+}
+
+// Check if agent can be reset/retried
+export function canAgentBeReset(agent: Agent): boolean {
+  return (
+    agent.status === "error" ||
+    agent.status === "stopped" ||
+    agent.status === "completed"
+  );
+}
+
+// Filter agents by status
+export function filterAgentsByStatus(
+  agents: Agent[],
+  statuses: Agent["status"][],
+): Agent[] {
+  return agents.filter((a) => statuses.includes(a.status));
+}
+
+// Get agents that can be cleaned up (completed or error)
+export function getCleanupCandidates(agents: Agent[]): Agent[] {
+  return filterAgentsByStatus(agents, ["completed", "error"]);
+}
+
+// Get stale agents (not updated within threshold)
+export function getStaleAgents(agents: Agent[], thresholdMs: number): Agent[] {
+  const now = Date.now();
+  return agents.filter((a) => {
+    const updatedAt = new Date(a.updatedAt).getTime();
+    return now - updatedAt > thresholdMs;
+  });
+}
+
+// Batch operations for cleanup
+export function getAgentIds(agents: Agent[]): string[] {
+  return agents.map((a) => a.id);
+}
+
 // Workspace path helpers
 
 export function buildWorkspacePath(basePath: string, id: string): string {
