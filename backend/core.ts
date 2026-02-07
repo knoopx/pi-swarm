@@ -187,7 +187,7 @@ export function transitionToError(agent: Agent, errorMessage: string): Agent {
 // Workspace path helpers
 
 export function buildWorkspacePath(basePath: string, id: string): string {
-  return `${basePath}/workspaces/${id}`;
+  return `${basePath}/.pi/swarm/workspaces/${id}`;
 }
 
 // Name generation from instruction

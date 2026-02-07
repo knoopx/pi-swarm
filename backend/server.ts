@@ -85,7 +85,7 @@ function broadcast(event: { type: string; [key: string]: unknown }) {
 
 async function createWorkspace(basePath: string, id: string): Promise<string> {
   const workspace = buildWorkspacePath(basePath, id);
-  await Bun.$`mkdir -p ${basePath}/workspaces`.quiet();
+  await Bun.$`mkdir -p ${basePath}/.pi/swarm/workspaces`.quiet();
   await Bun.$`cd ${basePath} && jj workspace add ${workspace} --name ${id}`.quiet();
   return workspace;
 }
