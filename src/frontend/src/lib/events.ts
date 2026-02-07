@@ -43,8 +43,15 @@ export interface ProcessingEvent {
   content: string;
 }
 
+export interface SystemEvent {
+  type: "system";
+  content: string;
+  variant: "info" | "warning" | "error";
+}
+
 export type ConversationEvent =
   | ToolEvent
   | TextEvent
   | ThinkingEvent
-  | ProcessingEvent;
+  | ProcessingEvent
+  | SystemEvent;

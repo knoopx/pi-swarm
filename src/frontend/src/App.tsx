@@ -410,7 +410,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                 }
               />
               <CompletableTextarea
-                placeholder="Describe your task... (Ctrl+Enter to start)"
+                placeholder="Describe your task... (Enter to start)"
                 value={instruction}
                 onChange={setInstruction}
                 onSubmit={handleCreate}
@@ -637,10 +637,10 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                       disabled={false}
                       placeholder={
                         selectedAgent.status === "stopped"
-                          ? "Send instruction to resume... (Ctrl+Enter)"
+                          ? "Send instruction to resume..."
                           : selectedAgent.status === "running"
-                            ? "Steer agent... (Ctrl+Enter to send, Ctrl+Shift+Enter to interrupt)"
-                            : "Send follow-up instruction... (Ctrl+Enter)"
+                            ? "Steer agent... (Enter to follow-up, Ctrl+Enter to interrupt)"
+                            : "Send follow-up instruction..."
                       }
                       completions={completions}
                       models={models}
@@ -824,7 +824,7 @@ function InstructInput({
   onSubmit,
   onInterrupt,
   disabled,
-  placeholder = "Send follow-up instruction... (Ctrl+Enter)",
+  placeholder = "Send follow-up instruction...",
   completions = [],
   models = [],
   selectedModel,
@@ -870,6 +870,7 @@ function InstructInput({
         value={value}
         onChange={setValue}
         onSubmit={handleSubmit}
+        onInterrupt={onInterrupt ? handleInterrupt : undefined}
         completions={completions}
         className="min-h-[44px] resize-none text-sm flex-1"
         rows={1}
@@ -896,9 +897,7 @@ function InstructInput({
               <Zap className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>
-            Interrupt and steer (Ctrl+Shift+Enter)
-          </TooltipContent>
+          <TooltipContent>Interrupt and steer (Ctrl+Enter)</TooltipContent>
         </Tooltip>
       )}
       <Button
@@ -979,10 +978,6 @@ function EmptyState() {
         </p>
         <div className="text-xs text-muted-foreground space-y-1">
           <p>
-            <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs">
-              Ctrl
-            </kbd>{" "}
-            +{" "}
             <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs">
               Enter
             </kbd>{" "}

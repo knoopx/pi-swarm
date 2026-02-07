@@ -245,6 +245,21 @@ export function processEvent(
       };
     }
 
+    case "interrupt": {
+      const flushed = flushPendingContent(state);
+      flushed.events.push({
+        type: "system",
+        content: (e.message as string) || "Interrupted",
+        variant: "warning",
+      });
+      return {
+        ...state,
+        events: flushed.events,
+        pendingText: flushed.pendingText,
+        pendingThinking: flushed.pendingThinking,
+      };
+    }
+
     default:
       return state;
   }

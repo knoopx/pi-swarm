@@ -27,6 +27,7 @@ interface CompletableTextareaProps extends Omit<
   onChange: (value: string) => void;
   completions: CompletionItem[];
   onSubmit?: () => void;
+  onInterrupt?: () => void;
 }
 
 const CompletableTextarea = React.forwardRef<
@@ -34,7 +35,16 @@ const CompletableTextarea = React.forwardRef<
   CompletableTextareaProps
 >(
   (
-    { value, onChange, completions, onSubmit, className, disabled, ...props },
+    {
+      value,
+      onChange,
+      completions,
+      onSubmit,
+      onInterrupt,
+      className,
+      disabled,
+      ...props
+    },
     ref,
   ) => {
     const [showCompletions, setShowCompletions] = useState(false);
@@ -179,8 +189,20 @@ const CompletableTextarea = React.forwardRef<
           }
         }
 
-        // Handle submit with Ctrl/Cmd+Enter
+        // Shift+Enter = newline (default behavior, don't prevent)
+        if (e.key === "Enter" && e.shiftKey) {
+          return;
+        }
+
+        // Ctrl/Cmd+Enter = interrupt/steering
         if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          onInterrupt?.();
+          return;
+        }
+
+        // Enter = submit
+        if (e.key === "Enter") {
           e.preventDefault();
           onSubmit?.();
         }

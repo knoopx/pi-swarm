@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle, Info, XCircle } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -103,6 +103,32 @@ export function ConversationLog({
                   <MessageResponse>{event.content}</MessageResponse>
                 </MessageContent>
               </Message>
+            );
+          }
+
+          if (event.type === "system") {
+            const icon =
+              event.variant === "error" ? (
+                <XCircle className="h-4 w-4" />
+              ) : event.variant === "warning" ? (
+                <AlertTriangle className="h-4 w-4" />
+              ) : (
+                <Info className="h-4 w-4" />
+              );
+            const colorClass =
+              event.variant === "error"
+                ? "text-destructive border-destructive/30 bg-destructive/10"
+                : event.variant === "warning"
+                  ? "text-base09 border-base09/30 bg-base09/10"
+                  : "text-muted-foreground border-border bg-muted/30";
+            return (
+              <div
+                key={i}
+                className={`flex items-center gap-2 px-3 py-2 rounded-md border text-sm ${colorClass}`}
+              >
+                {icon}
+                <span>{event.content}</span>
+              </div>
             );
           }
 
