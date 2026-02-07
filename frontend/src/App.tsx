@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Bot,
   Send,
@@ -17,6 +17,7 @@ import {
   XCircle,
   Wifi,
   WifiOff,
+  ListPlus,
 } from "lucide-react";
 import { useAgentStore } from "./store";
 import { Button } from "./components/ui/button";
@@ -159,6 +160,14 @@ export default function App() {
   const sortedAgents = sortAgents(agents);
   const runningCount = agents.filter((a) => a.status === "running").length;
 
+  // Count changed files from diff
+  const changedFilesCount = useMemo(() => {
+    if (!diff) return 0;
+    const matches = diff.match(/^\+\+\+ .+$/gm);
+    if (!matches) return 0;
+    return matches.filter((m) => !m.includes("/dev/null")).length;
+  }, [diff]);
+
   const parseModel = useCallback((modelString: string) => {
     const parts = modelString.split("/");
     if (parts.length < 2) return { provider: undefined, modelId: undefined };
@@ -187,6 +196,21 @@ export default function App() {
     setSelectedId,
     parseModel,
   ]);
+
+  const handleQueue = useCallback(async () => {
+    if (!instruction.trim()) return;
+
+    setCreating(true);
+    const name = generateAgentName(instruction);
+    const { provider, modelId } = parseModel(selectedModel);
+
+    const agent = await createAgent(name, instruction, provider, modelId);
+    if (agent) {
+      setSelectedId(agent.id);
+    }
+    setInstruction("");
+    setCreating(false);
+  }, [instruction, selectedModel, createAgent, setSelectedId, parseModel]);
 
   const handleRefine = useCallback(async () => {
     if (!instruction.trim()) return;
@@ -376,6 +400,25 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                     Let AI improve your task description
                   </TooltipContent>
                 </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleQueue}
+                      disabled={creating || refining || !instruction.trim()}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      {creating ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ListPlus className="h-4 w-4" />
+                      )}
+                      <span className="ml-2">Queue</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Add task without starting</TooltipContent>
+                </Tooltip>
                 <Button
                   onClick={handleCreate}
                   disabled={creating || refining || !instruction.trim()}
@@ -484,7 +527,17 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                       <TabsTrigger value="output" className="gap-2">
                         Output
                       </TabsTrigger>
-                      <TabsTrigger value="review">Review</TabsTrigger>
+                      <TabsTrigger value="review" className="gap-2">
+                        Review
+                        {changedFilesCount > 0 && (
+                          <Badge
+                            variant="secondary"
+                            className="px-1.5 py-0 text-xs"
+                          >
+                            {changedFilesCount}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
                     </TabsList>
                   </div>
 
@@ -703,7 +756,7 @@ function InstructInput({
   };
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2 items-end">
       <Textarea
         placeholder="Send follow-up instruction... (Ctrl+Enter)"
         value={value}
@@ -714,11 +767,15 @@ function InstructInput({
             handleSubmit();
           }
         }}
-        className="min-h-[44px] resize-none text-sm"
+        className="min-h-[44px] resize-none text-sm flex-1"
         rows={1}
         disabled={disabled}
       />
-      <Button onClick={handleSubmit} disabled={!value.trim() || disabled}>
+      <Button
+        onClick={handleSubmit}
+        disabled={!value.trim() || disabled}
+        className="h-[44px] px-4"
+      >
         <Send className="h-4 w-4" />
       </Button>
     </div>

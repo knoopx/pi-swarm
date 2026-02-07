@@ -33,6 +33,39 @@ const FRONTEND_DIST = join(BASE_PATH, "frontend", "dist");
 const AGENT_DIR = join(process.env.HOME || "~", ".pi", "agent");
 const IS_DEV = !existsSync(join(FRONTEND_DIST, "index.html"));
 const VITE_DEV_SERVER = "http://localhost:3000";
+const SWARM_DIR = join(BASE_PATH, ".pi", "swarm");
+const AGENTS_FILE = join(SWARM_DIR, "agents.json");
+
+// Persistence helpers
+async function ensureSwarmDir() {
+  if (!existsSync(SWARM_DIR)) {
+    await Bun.$`mkdir -p ${SWARM_DIR}`.quiet();
+  }
+}
+
+async function saveAgents() {
+  await ensureSwarmDir();
+  const data = Array.from(agents.values()).map(serializeAgent);
+  await Bun.write(AGENTS_FILE, JSON.stringify(data, null, 2));
+}
+
+async function loadAgents() {
+  try {
+    if (existsSync(AGENTS_FILE)) {
+      const data = await Bun.file(AGENTS_FILE).json();
+      for (const agentData of data) {
+        // Reset running agents to stopped on restart
+        if (agentData.status === "running") {
+          agentData.status = "stopped";
+        }
+        agents.set(agentData.id, agentData);
+      }
+      console.log(`📂 Loaded ${agents.size} agents from disk`);
+    }
+  } catch (err) {
+    console.error("Failed to load agents:", err);
+  }
+}
 
 // Auth and model registry - use user's existing auth
 const authStorage = new AuthStorage(join(AGENT_DIR, "auth.json"));
@@ -159,6 +192,7 @@ async function startAgent(agent: Agent): Promise<void> {
       agent.status = "waiting";
       agent.updatedAt = nowTs();
       broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
+      saveAgents();
     }
   });
 
@@ -172,9 +206,11 @@ async function startAgent(agent: Agent): Promise<void> {
     agent.output +=
       JSON.stringify({ type: "error", message: String(err) }) + "\n";
     broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
+    saveAgents();
   });
 
   broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
+  saveAgents();
 }
 
 async function stopAgent(agent: Agent): Promise<void> {
@@ -184,6 +220,7 @@ async function stopAgent(agent: Agent): Promise<void> {
   agent.status = "stopped";
   agent.updatedAt = nowTs();
   broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
+  saveAgents();
 }
 
 async function instructAgent(agent: Agent, instruction: string): Promise<void> {
@@ -197,6 +234,7 @@ async function instructAgent(agent: Agent, instruction: string): Promise<void> {
       console.error(`Agent ${agent.id} instruction error:`, err);
       agent.status = "error";
       broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
+      saveAgents();
     });
   } else {
     agent.instruction = instruction;
@@ -204,6 +242,7 @@ async function instructAgent(agent: Agent, instruction: string): Promise<void> {
   }
   agent.updatedAt = nowTs();
   broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
+  saveAgents();
 }
 
 async function setAgentModel(
@@ -228,6 +267,7 @@ async function setAgentModel(
 
   agent.updatedAt = nowTs();
   broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
+  saveAgents();
 }
 
 async function deleteAgent(agent: Agent): Promise<void> {
@@ -248,6 +288,7 @@ async function deleteAgent(agent: Agent): Promise<void> {
 
   agents.delete(agent.id);
   broadcast({ type: "agent_deleted", agentId: agent.id });
+  saveAgents();
 }
 
 async function mergeAgent(
@@ -355,6 +396,7 @@ app = app
 
       agents.set(id, agent);
       broadcast({ type: "agent_created", agent: serializeAgent(agent) });
+      saveAgents();
       return serializeAgent(agent);
     },
     {
@@ -458,6 +500,9 @@ app = app
     return Bun.file(join(FRONTEND_DIST, "index.html"));
   })
   .listen(3001);
+
+// Load persisted agents and start server
+await loadAgents();
 
 if (IS_DEV) {
   console.log(`📡 Dev mode: proxying to Vite at ${VITE_DEV_SERVER}`);
