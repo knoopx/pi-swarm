@@ -18,9 +18,39 @@ import {
   WrenchIcon,
   XCircleIcon,
 } from "lucide-react";
-import { isValidElement } from "react";
+import { isValidElement, useMemo } from "react";
+import AnsiToHtml from "ansi-to-html";
 
 import { CodeBlock } from "./code-block";
+
+// ANSI converter instance
+const ansiConverter = new AnsiToHtml({
+  fg: "currentColor",
+  bg: "transparent",
+  newline: true,
+  escapeXML: true,
+  colors: {
+    0: "#1e1e1e",
+    1: "#f44747",
+    2: "#6a9955",
+    3: "#dcdcaa",
+    4: "#569cd6",
+    5: "#c586c0",
+    6: "#4ec9b0",
+    7: "#d4d4d4",
+    8: "#808080",
+    9: "#f44747",
+    10: "#6a9955",
+    11: "#dcdcaa",
+    12: "#569cd6",
+    13: "#c586c0",
+    14: "#4ec9b0",
+    15: "#ffffff",
+  },
+});
+
+// Check if string contains ANSI escape codes
+const containsAnsi = (str: string): boolean => /\x1b\[[0-9;]*m/.test(str);
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
@@ -117,16 +147,26 @@ export type ToolInputProps = ComponentProps<"div"> & {
   input: ToolPart["input"];
 };
 
-export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
-  <div className={cn("space-y-2 overflow-hidden", className)} {...props}>
-    <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-      Parameters
-    </h4>
-    <div className="rounded-md bg-muted/50">
-      <CodeBlock code={JSON.stringify(input, null, 2)} language="json" />
+export const ToolInput = ({ className, input, ...props }: ToolInputProps) => {
+  const formattedInput = useMemo(() => {
+    try {
+      return JSON.stringify(input, null, 2);
+    } catch {
+      return String(input);
+    }
+  }, [input]);
+
+  return (
+    <div className={cn("space-y-2 overflow-hidden", className)} {...props}>
+      <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+        Parameters
+      </h4>
+      <div className="rounded-md bg-muted/50 overflow-hidden">
+        <CodeBlock code={formattedInput} language="json" />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export type ToolOutputProps = ComponentProps<"div"> & {
   output: ToolPart["output"];
@@ -169,43 +209,76 @@ function detectLanguage(
   return "shellscript"; // fallback to shellscript for plain text-like content
 }
 
+// Component to render ANSI-colored output
+const AnsiOutput = ({ content }: { content: string }) => {
+  const html = useMemo(() => ansiConverter.toHtml(content), [content]);
+  return (
+    <pre
+      className="whitespace-pre-wrap break-words p-3 text-sm font-mono"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+};
+
 export const ToolOutput = ({
   className,
   output,
   errorText,
   ...props
 }: ToolOutputProps) => {
-  if (!(output || errorText)) {
-    return null;
-  }
+  const renderedOutput = useMemo(() => {
+    if (!output) return null;
 
-  let Output = <div>{output as ReactNode}</div>;
+    // Handle React elements
+    if (isValidElement(output)) {
+      return <div>{output}</div>;
+    }
 
-  if (typeof output === "object" && !isValidElement(output)) {
-    Output = (
-      <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />
-    );
-  } else if (typeof output === "string") {
-    // Determine how to display string output
-    if (looksLikeJson(output)) {
-      // It's JSON, format and highlight it
+    // Handle objects (non-React elements)
+    if (typeof output === "object") {
       try {
-        const formatted = JSON.stringify(JSON.parse(output), null, 2);
-        Output = <CodeBlock code={formatted} language="json" />;
+        const formatted = JSON.stringify(output, null, 2);
+        return <CodeBlock code={formatted} language="json" />;
       } catch {
-        Output = <CodeBlock code={output} language="json" />;
+        return <pre className="p-3 text-sm font-mono">{String(output)}</pre>;
       }
-    } else if (looksLikeCode(output)) {
-      // It's code, use syntax highlighting
-      Output = <CodeBlock code={output} language={detectLanguage(output)} />;
-    } else {
-      // It's plain text, render as preformatted text without JSON highlighting
-      Output = (
+    }
+
+    // Handle strings
+    if (typeof output === "string") {
+      // Check for ANSI escape codes first
+      if (containsAnsi(output)) {
+        return <AnsiOutput content={output} />;
+      }
+
+      // Check if it's JSON
+      if (looksLikeJson(output)) {
+        try {
+          const formatted = JSON.stringify(JSON.parse(output), null, 2);
+          return <CodeBlock code={formatted} language="json" />;
+        } catch {
+          return <CodeBlock code={output} language="json" />;
+        }
+      }
+
+      // Check if it looks like code
+      if (looksLikeCode(output)) {
+        return <CodeBlock code={output} language={detectLanguage(output)} />;
+      }
+
+      // Plain text
+      return (
         <pre className="whitespace-pre-wrap break-words p-3 text-sm font-mono">
           {output}
         </pre>
       );
     }
+
+    return <div>{String(output)}</div>;
+  }, [output]);
+
+  if (!(output || errorText)) {
+    return null;
   }
 
   return (
@@ -221,8 +294,8 @@ export const ToolOutput = ({
             : "bg-muted/50 text-foreground",
         )}
       >
-        {errorText && <div className="p-3">{errorText}</div>}
-        {Output}
+        {errorText && <div className="p-3 font-mono">{errorText}</div>}
+        {renderedOutput}
       </div>
     </div>
   );
