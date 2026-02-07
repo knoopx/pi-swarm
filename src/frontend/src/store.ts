@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Agent, ModelInfo } from "./types";
+import type { Agent, ModelInfo, CompletionItem } from "./types";
 import { parseOutputToState, processEvent } from "./lib/conversation-state";
 
 const WS_URL = `ws://${window.location.host}/ws`;
@@ -32,6 +32,7 @@ interface AgentStore {
   cwd: string | null;
   agents: Agent[];
   models: ModelInfo[];
+  completions: CompletionItem[];
   loading: boolean;
   error: string | null;
   connected: boolean;
@@ -47,6 +48,7 @@ interface AgentStore {
   disconnect: () => void;
   setSelectedId: (id: string | null) => void;
   setDiff: (diff: string | null) => void;
+  fetchCompletions: () => Promise<void>;
 
   // WebSocket Commands
   sendCommand: <T = unknown>(
@@ -81,6 +83,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   cwd: null,
   agents: [],
   models: [],
+  completions: [],
   loading: true,
   error: null,
   connected: false,
@@ -240,6 +243,17 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   setSelectedId: (id) => set({ selectedId: id, diff: null }),
   setDiff: (diff) => set({ diff }),
+
+  fetchCompletions: async () => {
+    try {
+      const data = await get().sendCommand<{ completions: CompletionItem[] }>(
+        "get_completions",
+      );
+      set({ completions: data?.completions || [] });
+    } catch (err) {
+      console.error("Failed to fetch completions:", err);
+    }
+  },
 
   // Generic WebSocket command sender with request-response
   sendCommand: <T = unknown>(

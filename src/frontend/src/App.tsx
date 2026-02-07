@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useAgentStore } from "./store";
 import { Button } from "./components/ui/button";
-import { Textarea } from "./components/ui/textarea";
+import { CompletableTextarea } from "./components/CompletableTextarea";
 import { Badge } from "./components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import {
@@ -113,6 +113,7 @@ export default function App() {
     cwd,
     agents,
     models,
+    completions,
     loading,
     connected,
     selectedId,
@@ -128,6 +129,7 @@ export default function App() {
     getDiff,
     mergeAgent,
     deleteAgent,
+    fetchCompletions,
   } = useAgentStore();
 
   const [instruction, setInstruction] = useState("");
@@ -160,6 +162,13 @@ export default function App() {
   useEffect(() => {
     connect();
   }, [connect]);
+
+  // Fetch completions when connected
+  useEffect(() => {
+    if (connected) {
+      fetchCompletions();
+    }
+  }, [connected, fetchCompletions]);
 
   const selectedAgent = agents.find((a) => a.id === selectedId);
   const isSelectedSpecAgent = selectedAgent
@@ -407,16 +416,12 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                   models.length === 0 ? "Loading models..." : "Select model..."
                 }
               />
-              <Textarea
+              <CompletableTextarea
                 placeholder="Describe your task... (Ctrl+Enter to start)"
                 value={instruction}
-                onChange={(e) => setInstruction(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                    e.preventDefault();
-                    handleCreate();
-                  }
-                }}
+                onChange={setInstruction}
+                onSubmit={handleCreate}
+                completions={completions}
                 className="min-h-[80px] resize-none text-sm"
                 disabled={creating || refining}
               />
@@ -647,6 +652,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                           ? "Send instruction to resume... (Ctrl+Enter)"
                           : "Send follow-up instruction... (Ctrl+Enter)"
                       }
+                      completions={completions}
                     />
                   </div>
                 )}
@@ -815,10 +821,18 @@ function InstructInput({
   onSubmit,
   disabled,
   placeholder = "Send follow-up instruction... (Ctrl+Enter)",
+  completions = [],
 }: {
   onSubmit: (msg: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  completions?: {
+    name: string;
+    description?: string;
+    source: "extension" | "prompt" | "skill";
+    location?: string;
+    path?: string;
+  }[];
 }) {
   const [value, setValue] = useState("");
 
@@ -831,16 +845,12 @@ function InstructInput({
 
   return (
     <div className="flex gap-2 items-end">
-      <Textarea
+      <CompletableTextarea
         placeholder={placeholder}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-            e.preventDefault();
-            handleSubmit();
-          }
-        }}
+        onChange={setValue}
+        onSubmit={handleSubmit}
+        completions={completions}
         className="min-h-[44px] resize-none text-sm flex-1"
         rows={1}
         disabled={disabled}

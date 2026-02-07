@@ -8,6 +8,7 @@ import {
   type AgentSessionEvent,
   ModelRegistry,
   AuthStorage,
+  DefaultResourceLoader,
 } from "@mariozechner/pi-coding-agent";
 import { getModel, type Model, type Api } from "@mariozechner/pi-ai";
 import { join } from "path";
@@ -115,6 +116,65 @@ async function loadAgents() {
 // Auth and model registry - use user's existing auth
 const authStorage = new AuthStorage(join(AGENT_DIR, "auth.json"));
 const modelRegistry = new ModelRegistry(authStorage);
+
+// Resource loader for completions (skills, prompts, etc.)
+const resourceLoader = new DefaultResourceLoader({
+  cwd: BASE_PATH,
+  agentDir: AGENT_DIR,
+});
+
+// Initialize resource loader
+async function initResourceLoader() {
+  try {
+    await resourceLoader.reload();
+    console.log("📚 Resource loader initialized");
+  } catch (err) {
+    console.error("Failed to initialize resource loader:", err);
+  }
+}
+
+// Get available completions (commands, skills, prompts)
+function getCompletions(): Array<{
+  name: string;
+  description?: string;
+  source: "extension" | "prompt" | "skill";
+  location?: string;
+  path?: string;
+}> {
+  const completions: Array<{
+    name: string;
+    description?: string;
+    source: "extension" | "prompt" | "skill";
+    location?: string;
+    path?: string;
+  }> = [];
+
+  // Get prompt templates
+  const { prompts } = resourceLoader.getPrompts();
+  for (const prompt of prompts) {
+    completions.push({
+      name: prompt.name,
+      description: prompt.description,
+      source: "prompt",
+      location: prompt.source,
+      path: prompt.filePath,
+    });
+  }
+
+  // Get skills
+  const { skills } = resourceLoader.getSkills();
+  for (const skill of skills) {
+    completions.push({
+      name: `skill:${skill.name}`,
+      description: skill.description,
+      source: "skill",
+      location: skill.source,
+      path: skill.filePath,
+    });
+  }
+
+  return completions;
+}
 
 // Helpers
 function broadcast(event: { type: string; [key: string]: unknown }) {
@@ -588,6 +648,12 @@ async function handleWsCommand(
         break;
       }
 
+      case "get_completions": {
+        const completions = getCompletions();
+        sendResponse(ws, id, true, { completions });
+        break;
+      }
+
       default:
         sendResponse(ws, id, false, undefined, `Unknown command: ${type}`);
     }
@@ -655,8 +721,9 @@ app
   })
   .listen(3001);
 
-// Load persisted agents and start server
+// Load persisted agents, initialize resources, and start server
 await loadAgents();
+await initResourceLoader();
 
 if (IS_DEV) {
   console.log(`📡 Dev mode: proxying to Vite at ${VITE_DEV_SERVER}`);

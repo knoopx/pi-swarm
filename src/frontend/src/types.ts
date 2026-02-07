@@ -31,3 +31,11 @@ export interface ApiResponse<T> {
   diff?: string;
   message?: string;
 }
+
+export interface CompletionItem {
+  name: string;
+  description?: string;
+  source: "extension" | "prompt" | "skill";
+  location?: string;
+  path?: string;
+}
