@@ -34,11 +34,8 @@ import { ConversationLog } from "./components/ConversationLog";
 import { ReviewMode, type ReviewComment } from "./components/ReviewMode";
 import { ModelSelector } from "./components/ModelSelector";
 import { extractTextFromConversation } from "./lib/conversation-state";
-import {
-  generateAgentName,
-  isSpecAgent,
-  parseModelString,
-} from "./lib/store-utils";
+import { isSpecAgent } from "./lib/store-utils";
+import { generateAgentName, parseModelString } from "./lib/shared";
 import type { Agent } from "./types";
 
 // Status configuration with icons and colors

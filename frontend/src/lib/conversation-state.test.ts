@@ -5,9 +5,9 @@ import {
   parseOutputToState,
   getDisplayEvents,
   extractTextFromConversation,
-  extractToolResult,
   type ConversationState,
 } from "./conversation-state";
+import { extractToolResult } from "./shared";
 
 describe("conversation-state", () => {
   describe("createConversationState", () => {

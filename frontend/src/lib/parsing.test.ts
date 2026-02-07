@@ -1,13 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   parseOutput,
-  extractToolResult,
   extractTextFromOutput,
   isProcessingMessage,
-  type ToolExecutionEvent,
-  type TextEvent,
-  type ThinkingEvent,
 } from "./parsing";
+import { extractToolResult } from "./shared";
+import type { ToolEvent, TextEvent, ThinkingEvent } from "./events";
 
 describe("parsing", () => {
   describe("isProcessingMessage", () => {
@@ -67,7 +65,7 @@ describe("parsing", () => {
         const result = parseOutput(output);
         expect(result).toHaveLength(1);
 
-        const event = result[0] as ToolExecutionEvent;
+        const event = result[0] as ToolEvent;
         expect(event.type).toBe("tool");
         expect(event.toolCallId).toBe("call-1");
         expect(event.toolName).toBe("Read");
@@ -96,7 +94,7 @@ describe("parsing", () => {
         const result = parseOutput(output);
         expect(result).toHaveLength(1);
 
-        const event = result[0] as ToolExecutionEvent;
+        const event = result[0] as ToolEvent;
         expect(event.result).toBe("file contents");
         expect(event.isError).toBe(false);
         expect(event.state).toBe("output-available");
@@ -121,7 +119,7 @@ describe("parsing", () => {
 
       it("then sets output-error state", () => {
         const result = parseOutput(output);
-        const event = result[0] as ToolExecutionEvent;
+        const event = result[0] as ToolEvent;
         expect(event.isError).toBe(true);
         expect(event.state).toBe("output-error");
       });
@@ -191,7 +189,7 @@ describe("parsing", () => {
         expect((result[0] as TextEvent).content).toBe("Let me read that file.");
 
         expect(result[1].type).toBe("tool");
-        expect((result[1] as ToolExecutionEvent).toolName).toBe("Read");
+        expect((result[1] as ToolEvent).toolName).toBe("Read");
 
         expect(result[2].type).toBe("text");
         expect((result[2] as TextEvent).content).toBe("Here are the contents.");
@@ -235,7 +233,7 @@ describe("parsing", () => {
         const result = parseOutput(output);
         expect(result).toHaveLength(1);
 
-        const event = result[0] as ToolExecutionEvent;
+        const event = result[0] as ToolEvent;
         // Final result should be from tool_execution_end
         expect(event.result).toBe("file1.txt\nfile2.txt");
       });
@@ -273,11 +271,11 @@ describe("parsing", () => {
         const result = parseOutput(output);
         expect(result).toHaveLength(2);
 
-        expect((result[0] as ToolExecutionEvent).toolCallId).toBe("call-1");
-        expect((result[0] as ToolExecutionEvent).result).toBe("A");
+        expect((result[0] as ToolEvent).toolCallId).toBe("call-1");
+        expect((result[0] as ToolEvent).result).toBe("A");
 
-        expect((result[1] as ToolExecutionEvent).toolCallId).toBe("call-2");
-        expect((result[1] as ToolExecutionEvent).result).toBe("B");
+        expect((result[1] as ToolEvent).toolCallId).toBe("call-2");
+        expect((result[1] as ToolEvent).result).toBe("B");
       });
     });
 
@@ -291,7 +289,7 @@ describe("parsing", () => {
 
       it("then defaults args to empty object", () => {
         const result = parseOutput(output);
-        const event = result[0] as ToolExecutionEvent;
+        const event = result[0] as ToolEvent;
         expect(event.args).toEqual({});
       });
     });
@@ -553,7 +551,7 @@ describe("parsing", () => {
         );
 
         expect(result[1].type).toBe("tool");
-        expect((result[1] as ToolExecutionEvent).toolName).toBe("Read");
+        expect((result[1] as ToolEvent).toolName).toBe("Read");
 
         expect(result[2].type).toBe("text");
         expect((result[2] as TextEvent).content).toBe("The file contains...");

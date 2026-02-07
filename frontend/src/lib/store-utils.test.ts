@@ -8,11 +8,13 @@ import {
   selectRunningAgents,
   selectAgentsByStatus,
   isSpecAgent,
+  type StoreState,
+} from "./store-utils";
+import {
   generateAgentName,
   parseModelString,
   formatModelString,
-  type StoreState,
-} from "./store-utils";
+} from "./shared";
 import { createConversationState } from "./conversation-state";
 import type { Agent } from "../types";
 

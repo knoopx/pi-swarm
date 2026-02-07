@@ -20,7 +20,8 @@ import {
 import { Thinking, ThinkingContent } from "./ai-elements/thinking";
 import type { ToolUIPart } from "ai";
 import type { ConversationState } from "../lib/conversation-state";
-import { getDisplayEvents, extractToolResult } from "../lib/conversation-state";
+import { getDisplayEvents } from "../lib/conversation-state";
+import { extractToolResult } from "../lib/shared";
 
 interface ConversationLogProps {
   conversation: ConversationState;

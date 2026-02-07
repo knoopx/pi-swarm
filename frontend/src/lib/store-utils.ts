@@ -1,14 +1,6 @@
 // Store utilities - extracted for testability
 
 import type { Agent } from "../types";
-import {
-  generateAgentName,
-  parseModelString,
-  formatModelString,
-} from "./shared";
-
-// Re-export for convenience
-export { generateAgentName, parseModelString, formatModelString };
 
 export interface StoreState {
   agents: Agent[];

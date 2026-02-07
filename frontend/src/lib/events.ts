@@ -2,7 +2,6 @@
 
 import type { ToolUIPart } from "ai";
 
-// Core event types
 export interface ToolEvent {
   type: "tool";
   toolCallId: string;
@@ -34,7 +33,3 @@ export type ConversationEvent =
   | TextEvent
   | ThinkingEvent
   | ProcessingEvent;
-
-// Legacy alias for compatibility with parsing.ts
-export type ParsedEvent = ConversationEvent;
-export type ToolExecutionEvent = ToolEvent;

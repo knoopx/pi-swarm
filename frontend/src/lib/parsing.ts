@@ -1,18 +1,6 @@
 // Parsing utilities for agent output - extracted for testability
 
-import type { ToolEvent, ParsedEvent, ToolExecutionEvent } from "./events";
-import { extractToolResult } from "./shared";
-
-// Re-export types for convenience
-export type {
-  ToolEvent,
-  TextEvent,
-  ThinkingEvent,
-  ProcessingEvent,
-  ParsedEvent,
-  ToolExecutionEvent,
-} from "./events";
-export { extractToolResult };
+import type { ToolEvent, ConversationEvent } from "./events";
 
 // Processing status messages
 const PROCESSING_MESSAGES = [
@@ -25,16 +13,16 @@ export function isProcessingMessage(output: string): boolean {
   return !output || PROCESSING_MESSAGES.includes(output);
 }
 
-export function parseOutput(output: string): ParsedEvent[] {
+export function parseOutput(output: string): ConversationEvent[] {
   if (isProcessingMessage(output)) {
     return [{ type: "processing", content: output || "Waiting..." }];
   }
 
-  const events: ParsedEvent[] = [];
+  const events: ConversationEvent[] = [];
   const lines = output.split("\n").filter((l) => l.trim());
 
   // Track tool executions by ID for merging start/end events
-  const toolMap = new Map<string, ToolExecutionEvent>();
+  const toolMap = new Map<string, ToolEvent>();
 
   // Track accumulated text and thinking
   let currentText = "";

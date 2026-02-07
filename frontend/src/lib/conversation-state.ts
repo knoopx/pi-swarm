@@ -1,17 +1,6 @@
 // Conversation state management - processes events incrementally
 
 import type { ToolEvent, ConversationEvent } from "./events";
-import { extractToolResult } from "./shared";
-
-// Re-export types for convenience
-export type {
-  ToolEvent,
-  TextEvent,
-  ThinkingEvent,
-  ProcessingEvent,
-  ConversationEvent,
-} from "./events";
-export { extractToolResult };
 
 // Conversation state that gets updated incrementally
 export interface ConversationState {
