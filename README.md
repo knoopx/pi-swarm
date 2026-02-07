@@ -44,23 +44,37 @@ Multi-agent orchestration for pi coding agents. Each agent works in an isolated 
 - [Bun](https://bun.sh)
 - [pi coding agent](https://github.com/badlogic/pi-mono)
 
-## Quick Start
+## Installation
+
+### Run directly with bunx (recommended)
+
+```bash
+bunx github:knoopx/pi-swarm
+```
+
+### Install globally
+
+```bash
+bun add -g github:knoopx/pi-swarm
+pi-swarm
+```
+
+### Development
 
 1. **Install dependencies**:
 
    ```bash
    bun install
-   cd frontend && bun install
-   cd ../backend && bun install
+   cd src/frontend && bun install
    ```
 
-2. **Build frontend**:
+2. **Start dev server** (with hot reload):
 
    ```bash
-   bun run build
+   bun run dev
    ```
 
-3. **Start the server**:
+3. **Or build and start**:
 
    ```bash
    bun run start
@@ -77,17 +91,7 @@ For development with hot-reload:
 bun run dev
 ```
 
-Or run them separately:
-
-```bash
-# Terminal 1: Backend (with watch mode)
-cd backend && bun run dev
-
-# Terminal 2: Frontend (Vite dev server)
-cd frontend && bun run dev
-```
-
-Then open http://localhost:5173 (Vite proxies API calls to backend).
+Then open http://localhost:3001 (Vite dev server runs on 3000, backend proxies to it).
 
 ## API Endpoints
 
@@ -117,25 +121,23 @@ Then open http://localhost:5173 (Vite proxies API calls to backend).
 
 ```
 pi-swarm/
-├── .pi/swarm/                # Swarm data directory
-│   ├── agents.json           # Persisted agent state
-│   └── workspaces/           # Agent workspaces
-│       ├── abc12345/         # Agent workspace (jj workspace)
-│       └── def67890/
-├── backend/
+├── bin/pi-swarm.ts           # CLI entry point
+├── src/
 │   ├── server.ts             # Elysia API server with Pi SDK
 │   ├── core.ts               # Core types and helpers
-│   └── core.test.ts          # Backend tests
-├── frontend/
-│   ├── src/
-│   │   ├── components/       # React components
-│   │   │   ├── ai-elements/  # Conversation display components
-│   │   │   └── ui/           # shadcn/ui components
-│   │   ├── lib/              # Utilities and state management
-│   │   ├── store.ts          # Zustand store
-│   │   └── App.tsx           # Main app component
-│   └── dist/                 # Built frontend (production)
-└── package.json              # Root package with dev scripts
+│   ├── server-logic.ts       # WebSocket message handling
+│   ├── *.test.ts             # Tests
+│   └── frontend/             # React frontend
+│       └── src/
+│           ├── components/   # React components
+│           ├── lib/          # Utilities and state
+│           └── App.tsx       # Main app
+├── dist/                     # Built frontend (created on install)
+├── .pi/swarm/                # Runtime data (created per-project)
+│   ├── sessions/             # Agent sessions
+│   │   └── <agent-id>/       # Per-agent session & metadata
+│   └── workspaces/           # Agent jj workspaces
+└── package.json
 ```
 
 ## Future Improvements

@@ -1,3 +1,4 @@
 node_modules/
 */node_modules/*
-frontend/dist
+dist/
+frontend/dist/

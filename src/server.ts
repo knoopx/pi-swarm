@@ -1,4 +1,4 @@
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 import { staticPlugin } from "@elysiajs/static";
 import { existsSync } from "fs";
 import {
@@ -47,8 +47,10 @@ interface WsResponse {
 const agents = new Map<string, Agent>();
 const wsClients = new Set<{ send: (data: string) => void }>();
 
-const BASE_PATH = process.cwd().replace("/backend", "");
-const FRONTEND_DIST = join(BASE_PATH, "frontend", "dist");
+// Package paths (set by CLI or defaults for dev)
+const BASE_PATH = process.env.PI_SWARM_CWD || process.cwd();
+const FRONTEND_DIST =
+  process.env.PI_SWARM_DIST || join(BASE_PATH, "frontend", "dist");
 const AGENT_DIR = join(process.env.HOME || "~", ".pi", "agent");
 const IS_DEV = !existsSync(join(FRONTEND_DIST, "index.html"));
 const VITE_DEV_SERVER = "http://localhost:3000";
@@ -592,14 +594,6 @@ async function handleWsCommand(
   } catch (err) {
     sendResponse(ws, id, false, undefined, String(err));
   }
-}
-
-// Helper for error responses
-function errorResponse(status: number, body: object) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
 }
 
 // Dev proxy helper
