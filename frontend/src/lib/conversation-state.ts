@@ -1,39 +1,17 @@
 // Conversation state management - processes events incrementally
 
-import type { ToolUIPart } from "ai";
+import type { ToolEvent, ConversationEvent } from "./events";
+import { extractToolResult } from "./shared";
 
-// Core event types
-export interface ToolEvent {
-  type: "tool";
-  toolCallId: string;
-  toolName: string;
-  args: Record<string, unknown>;
-  result?: unknown;
-  isError?: boolean;
-  state: ToolUIPart["state"];
-}
-
-export interface TextEvent {
-  type: "text";
-  content: string;
-  role: "user" | "assistant";
-}
-
-export interface ThinkingEvent {
-  type: "thinking";
-  content: string;
-}
-
-export interface ProcessingEvent {
-  type: "processing";
-  content: string;
-}
-
-export type ConversationEvent =
-  | ToolEvent
-  | TextEvent
-  | ThinkingEvent
-  | ProcessingEvent;
+// Re-export types for convenience
+export type {
+  ToolEvent,
+  TextEvent,
+  ThinkingEvent,
+  ProcessingEvent,
+  ConversationEvent,
+} from "./events";
+export { extractToolResult };
 
 // Conversation state that gets updated incrementally
 export interface ConversationState {
@@ -54,6 +32,51 @@ export function createConversationState(): ConversationState {
   };
 }
 
+// Helper to update a tool event in state
+function updateToolInState(
+  state: ConversationState,
+  toolId: string,
+  updater: (existing: ToolEvent) => ToolEvent,
+): ConversationState {
+  const existing = state.toolsById.get(toolId);
+  if (!existing) return state;
+
+  const updated = updater(existing);
+  const newToolsById = new Map(state.toolsById);
+  newToolsById.set(toolId, updated);
+
+  const events = state.events.map((ev) =>
+    ev.type === "tool" && ev.toolCallId === toolId ? updated : ev,
+  );
+
+  return { ...state, events, toolsById: newToolsById };
+}
+
+// Helper to flush pending content
+function flushPendingContent(state: ConversationState): {
+  events: ConversationEvent[];
+  pendingText: string;
+  pendingThinking: string;
+} {
+  const events = [...state.events];
+
+  if (state.pendingThinking.trim()) {
+    events.push({
+      type: "thinking",
+      content: state.pendingThinking.trim(),
+    });
+  }
+  if (state.pendingText.trim()) {
+    events.push({
+      type: "text",
+      content: state.pendingText.trim(),
+      role: "assistant",
+    });
+  }
+
+  return { events, pendingText: "", pendingThinking: "" };
+}
+
 // Process a single agent session event and update state
 // Returns a new state object (immutable update)
 export function processEvent(
@@ -72,82 +95,41 @@ export function processEvent(
         toolCallId: e.toolCallId as string,
         toolName: e.toolName as string,
         args: (e.args as Record<string, unknown>) || {},
-        state: "streaming-input",
+        state: "input-streaming",
       };
 
       const newToolsById = new Map(state.toolsById);
       newToolsById.set(toolEvent.toolCallId, toolEvent);
 
-      // Flush any pending text before tool
-      const events = [...state.events];
-      if (state.pendingThinking.trim()) {
-        events.push({
-          type: "thinking",
-          content: state.pendingThinking.trim(),
-        });
-      }
-      if (state.pendingText.trim()) {
-        events.push({
-          type: "text",
-          content: state.pendingText.trim(),
-          role: "assistant",
-        });
-      }
-      events.push(toolEvent);
+      // Flush any pending content before tool
+      const flushed = flushPendingContent(state);
+      flushed.events.push(toolEvent);
 
       return {
         ...state,
-        events,
+        events: flushed.events,
         toolsById: newToolsById,
-        pendingText: "",
-        pendingThinking: "",
+        pendingText: flushed.pendingText,
+        pendingThinking: flushed.pendingThinking,
       };
     }
 
     case "tool_execution_update": {
-      const toolId = e.toolCallId as string;
-      const existing = state.toolsById.get(toolId);
-      if (!existing) return state;
-
-      const updated: ToolEvent = {
+      return updateToolInState(state, e.toolCallId as string, (existing) => ({
         ...existing,
         result: e.partialResult,
-        state: "streaming-output",
-      };
-
-      const newToolsById = new Map(state.toolsById);
-      newToolsById.set(toolId, updated);
-
-      // Update in events array too
-      const events = state.events.map((ev) =>
-        ev.type === "tool" && ev.toolCallId === toolId ? updated : ev,
-      );
-
-      return { ...state, events, toolsById: newToolsById };
+        state: "input-available",
+      }));
     }
 
     case "tool_execution_end": {
-      const toolId = e.toolCallId as string;
-      const existing = state.toolsById.get(toolId);
-      if (!existing) return state;
-
       const isError = e.isError as boolean;
-      const updated: ToolEvent = {
+      return updateToolInState(state, e.toolCallId as string, (existing) => ({
         ...existing,
         result: e.result,
         isError,
         state: isError ? "output-error" : "output-available",
-      };
-
-      const newToolsById = new Map(state.toolsById);
-      newToolsById.set(toolId, updated);
-
-      // Update in events array
-      const events = state.events.map((ev) =>
-        ev.type === "tool" && ev.toolCallId === toolId ? updated : ev,
-      );
-
-      return { ...state, events, toolsById: newToolsById };
+      }));
     }
 
     case "message_update": {
@@ -208,28 +190,12 @@ export function processEvent(
 
     case "message_end":
     case "agent_end": {
-      // Flush all pending content
-      const events = [...state.events];
-
-      if (state.pendingThinking.trim()) {
-        events.push({
-          type: "thinking",
-          content: state.pendingThinking.trim(),
-        });
-      }
-      if (state.pendingText.trim()) {
-        events.push({
-          type: "text",
-          content: state.pendingText.trim(),
-          role: "assistant",
-        });
-      }
-
+      const flushed = flushPendingContent(state);
       return {
         ...state,
-        events,
-        pendingText: "",
-        pendingThinking: "",
+        events: flushed.events,
+        pendingText: flushed.pendingText,
+        pendingThinking: flushed.pendingThinking,
       };
     }
 
@@ -259,18 +225,13 @@ export function parseOutputToState(output: string): ConversationState {
 
   // Final flush
   if (state.pendingThinking.trim() || state.pendingText.trim()) {
-    const events = [...state.events];
-    if (state.pendingThinking.trim()) {
-      events.push({ type: "thinking", content: state.pendingThinking.trim() });
-    }
-    if (state.pendingText.trim()) {
-      events.push({
-        type: "text",
-        content: state.pendingText.trim(),
-        role: "assistant",
-      });
-    }
-    state = { ...state, events, pendingText: "", pendingThinking: "" };
+    const flushed = flushPendingContent(state);
+    state = {
+      ...state,
+      events: flushed.events,
+      pendingText: flushed.pendingText,
+      pendingThinking: flushed.pendingThinking,
+    };
   }
 
   return state;
@@ -313,28 +274,4 @@ export function extractTextFromConversation(state: ConversationState): string {
   }
 
   return textParts.join("\n");
-}
-
-// Extract tool result text (utility)
-export function extractToolResult(result: unknown): string {
-  if (!result) return "";
-
-  if (typeof result === "object" && result !== null && "content" in result) {
-    const content = (result as { content: unknown }).content;
-    if (Array.isArray(content)) {
-      return content
-        .filter(
-          (c): c is { type: "text"; text: string } =>
-            typeof c === "object" && c !== null && c.type === "text",
-        )
-        .map((c) => c.text)
-        .join("\n");
-    }
-    if (typeof content === "string") {
-      return content;
-    }
-  }
-
-  if (typeof result === "string") return result;
-  return JSON.stringify(result, null, 2);
 }

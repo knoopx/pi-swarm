@@ -1,10 +1,6 @@
 import { create } from "zustand";
 import type { Agent, ModelInfo } from "./types";
-import {
-  createConversationState,
-  parseOutputToState,
-  processEvent,
-} from "./lib/conversation-state";
+import { parseOutputToState, processEvent } from "./lib/conversation-state";
 
 const API_BASE = "/api";
 const WS_URL = `ws://${window.location.host}/ws`;

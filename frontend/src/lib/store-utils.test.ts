@@ -13,6 +13,7 @@ import {
   formatModelString,
   type StoreState,
 } from "./store-utils";
+import { createConversationState } from "./conversation-state";
 import type { Agent } from "../types";
 
 // Test fixtures
@@ -27,6 +28,7 @@ function createTestAgent(overrides: Partial<Agent> = {}): Agent {
     createdAt: "2024-01-01T00:00:00.000Z",
     updatedAt: "2024-01-01T00:00:00.000Z",
     output: "",
+    conversation: createConversationState(),
     modifiedFiles: [],
     diffStat: "",
     model: "test-model",

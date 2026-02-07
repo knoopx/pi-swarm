@@ -34,7 +34,11 @@ import { ConversationLog } from "./components/ConversationLog";
 import { ReviewMode, type ReviewComment } from "./components/ReviewMode";
 import { ModelSelector } from "./components/ModelSelector";
 import { extractTextFromConversation } from "./lib/conversation-state";
-import { generateAgentName, isSpecAgent } from "./lib/store-utils";
+import {
+  generateAgentName,
+  isSpecAgent,
+  parseModelString,
+} from "./lib/store-utils";
 import type { Agent } from "./types";
 
 // Status configuration with icons and colors
@@ -168,55 +172,46 @@ export default function App() {
     return matches.filter((m) => !m.includes("/dev/null")).length;
   }, [diff]);
 
-  const parseModel = useCallback((modelString: string) => {
-    const parts = modelString.split("/");
-    if (parts.length < 2) return { provider: undefined, modelId: undefined };
-    return { provider: parts[0], modelId: parts.slice(1).join("/") };
-  }, []);
+  const createNewAgent = useCallback(
+    async (autoStart: boolean) => {
+      if (!instruction.trim()) return;
 
-  const handleCreate = useCallback(async () => {
-    if (!instruction.trim()) return;
+      setCreating(true);
+      const name = generateAgentName(instruction);
+      const parsed = parseModelString(selectedModel);
+      const provider = parsed?.provider;
+      const modelId = parsed?.modelId;
 
-    setCreating(true);
-    const name = generateAgentName(instruction);
-    const { provider, modelId } = parseModel(selectedModel);
+      const agent = await createAgent(name, instruction, provider, modelId);
+      if (agent) {
+        if (autoStart) {
+          await startAgent(agent.id);
+        }
+        setSelectedId(agent.id);
+      }
+      setInstruction("");
+      setCreating(false);
+    },
+    [instruction, selectedModel, createAgent, startAgent, setSelectedId],
+  );
 
-    const agent = await createAgent(name, instruction, provider, modelId);
-    if (agent) {
-      await startAgent(agent.id);
-      setSelectedId(agent.id);
-    }
-    setInstruction("");
-    setCreating(false);
-  }, [
-    instruction,
-    selectedModel,
-    createAgent,
-    startAgent,
-    setSelectedId,
-    parseModel,
-  ]);
+  const handleCreate = useCallback(
+    () => createNewAgent(true),
+    [createNewAgent],
+  );
 
-  const handleQueue = useCallback(async () => {
-    if (!instruction.trim()) return;
-
-    setCreating(true);
-    const name = generateAgentName(instruction);
-    const { provider, modelId } = parseModel(selectedModel);
-
-    const agent = await createAgent(name, instruction, provider, modelId);
-    if (agent) {
-      setSelectedId(agent.id);
-    }
-    setInstruction("");
-    setCreating(false);
-  }, [instruction, selectedModel, createAgent, setSelectedId, parseModel]);
+  const handleQueue = useCallback(
+    () => createNewAgent(false),
+    [createNewAgent],
+  );
 
   const handleRefine = useCallback(async () => {
     if (!instruction.trim()) return;
 
     setRefining(true);
-    const { provider, modelId } = parseModel(selectedModel);
+    const parsed = parseModelString(selectedModel);
+    const provider = parsed?.provider;
+    const modelId = parsed?.modelId;
     const refinePrompt = `You are a task specification expert. Analyze the following task request and create a detailed, well-structured specification that a coding agent can follow.
 
 Original task request:
@@ -243,14 +238,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
     }
     setInstruction("");
     setRefining(false);
-  }, [
-    instruction,
-    selectedModel,
-    createAgent,
-    startAgent,
-    setSelectedId,
-    parseModel,
-  ]);
+  }, [instruction, selectedModel, createAgent, startAgent, setSelectedId]);
 
   const handleAcceptSpec = useCallback(async () => {
     if (!selectedAgent) return;
@@ -492,9 +480,13 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                       models={models}
                       value={`${selectedAgent.provider}/${selectedAgent.model}`}
                       onChange={(value) => {
-                        const { provider, modelId } = parseModel(value);
-                        if (provider && modelId) {
-                          setAgentModel(selectedAgent.id, provider, modelId);
+                        const parsed = parseModelString(value);
+                        if (parsed) {
+                          setAgentModel(
+                            selectedAgent.id,
+                            parsed.provider,
+                            parsed.modelId,
+                          );
                         }
                       }}
                       disabled={selectedAgent.status === "running"}

@@ -1,6 +1,14 @@
 // Store utilities - extracted for testability
 
 import type { Agent } from "../types";
+import {
+  generateAgentName,
+  parseModelString,
+  formatModelString,
+} from "./shared";
+
+// Re-export for convenience
+export { generateAgentName, parseModelString, formatModelString };
 
 export interface StoreState {
   agents: Agent[];
@@ -81,36 +89,4 @@ export function selectAgentsByStatus(
 
 export function isSpecAgent(agent: Agent): boolean {
   return agent.name.startsWith("spec-");
-}
-
-// Name generation from instruction (used by handleCreate/handleRefine)
-
-export function generateAgentName(instruction: string): string {
-  return (
-    instruction
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, "")
-      .split(/\s+/)
-      .slice(0, 3)
-      .join("-")
-      .substring(0, 20) || "task"
-  );
-}
-
-// Model string parsing
-
-export function parseModelString(
-  modelString: string,
-): { provider: string; modelId: string } | null {
-  const parts = modelString.split("/");
-  if (parts.length < 2) return null;
-  return {
-    provider: parts[0],
-    modelId: parts.slice(1).join("/"),
-  };
-}
-
-export function formatModelString(provider: string, modelId: string): string {
-  return `${provider}/${modelId}`;
 }

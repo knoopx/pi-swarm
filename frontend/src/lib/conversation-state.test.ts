@@ -39,7 +39,7 @@ describe("conversation-state", () => {
           toolCallId: "tool-1",
           toolName: "Read",
           args: { path: "/test" },
-          state: "streaming-input",
+          state: "input-streaming",
         });
         expect(newState.toolsById.get("tool-1")).toBeDefined();
       });
@@ -86,7 +86,7 @@ describe("conversation-state", () => {
 
         const tool = newState.toolsById.get("tool-1");
         expect(tool?.result).toBe("partial content");
-        expect(tool?.state).toBe("streaming-output");
+        expect(tool?.state).toBe("input-available");
       });
     });
 

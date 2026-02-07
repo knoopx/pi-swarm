@@ -1,39 +1,18 @@
 // Parsing utilities for agent output - extracted for testability
 
-import type { ToolUIPart } from "ai";
+import type { ToolEvent, ParsedEvent, ToolExecutionEvent } from "./events";
+import { extractToolResult } from "./shared";
 
-// Parsed event types that align with pi's AgentSessionEvent
-export interface ToolExecutionEvent {
-  type: "tool";
-  toolCallId: string;
-  toolName: string;
-  args: Record<string, unknown>;
-  result?: unknown;
-  isError?: boolean;
-  state: ToolUIPart["state"];
-}
-
-export interface TextEvent {
-  type: "text";
-  content: string;
-  role: "user" | "assistant";
-}
-
-export interface ThinkingEvent {
-  type: "thinking";
-  content: string;
-}
-
-export interface ProcessingEvent {
-  type: "processing";
-  content: string;
-}
-
-export type ParsedEvent =
-  | ToolExecutionEvent
-  | TextEvent
-  | ThinkingEvent
-  | ProcessingEvent;
+// Re-export types for convenience
+export type {
+  ToolEvent,
+  TextEvent,
+  ThinkingEvent,
+  ProcessingEvent,
+  ParsedEvent,
+  ToolExecutionEvent,
+} from "./events";
+export { extractToolResult };
 
 // Processing status messages
 const PROCESSING_MESSAGES = [
@@ -91,7 +70,7 @@ export function parseOutput(output: string): ParsedEvent[] {
       switch (event.type) {
         case "tool_execution_start": {
           flushText();
-          const toolEvent: ToolExecutionEvent = {
+          const toolEvent: ToolEvent = {
             type: "tool",
             toolCallId: event.toolCallId,
             toolName: event.toolName,
@@ -182,31 +161,6 @@ export function parseOutput(output: string): ParsedEvent[] {
   }
 
   return events;
-}
-
-export function extractToolResult(result: unknown): string {
-  if (!result) return "";
-
-  // Handle AgentToolResult format: { content: TextContent[], details: unknown }
-  if (typeof result === "object" && result !== null && "content" in result) {
-    const content = (result as { content: unknown }).content;
-    if (Array.isArray(content)) {
-      return content
-        .filter(
-          (c): c is { type: "text"; text: string } =>
-            typeof c === "object" && c !== null && c.type === "text",
-        )
-        .map((c) => c.text)
-        .join("\n");
-    }
-    if (typeof content === "string") {
-      return content;
-    }
-  }
-
-  // Fallback: stringify the result
-  if (typeof result === "string") return result;
-  return JSON.stringify(result, null, 2);
 }
 
 // Extract text from agent output (used by handleAcceptSpec)
