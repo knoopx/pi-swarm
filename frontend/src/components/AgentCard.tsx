@@ -24,6 +24,7 @@ interface AgentCardProps {
   agent: Agent;
   onStart: (id: string) => Promise<boolean>;
   onStop: (id: string) => Promise<boolean>;
+  onResume: (id: string, instruction?: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   onMerge: (id: string) => Promise<boolean>;
   onInstruct: (id: string, instruction: string) => Promise<boolean>;
@@ -60,6 +61,7 @@ export function AgentCard({
   agent,
   onStart,
   onStop,
+  onResume,
   onDelete,
   onMerge,
   onInstruct,
@@ -127,6 +129,7 @@ export function AgentCard({
                 size="sm"
                 variant="ghost"
                 onClick={() => onStart(agent.id)}
+                title="Start agent"
               >
                 <Play className="h-4 w-4" />
               </Button>
@@ -136,15 +139,29 @@ export function AgentCard({
                 size="sm"
                 variant="ghost"
                 onClick={() => onStop(agent.id)}
+                title="Stop agent"
               >
                 <Square className="h-4 w-4" />
               </Button>
             )}
-            {(agent.status === "completed" || agent.status === "stopped") && (
+            {agent.status === "stopped" && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onResume(agent.id)}
+                title="Resume agent"
+              >
+                <Play className="h-4 w-4" />
+              </Button>
+            )}
+            {(agent.status === "completed" ||
+              agent.status === "stopped" ||
+              agent.status === "waiting") && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => onMerge(agent.id)}
+                title="Merge changes"
               >
                 <GitMerge className="h-4 w-4" />
               </Button>

@@ -2,6 +2,21 @@
 
 import type { ToolUIPart } from "ai";
 
+export interface Usage {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+  totalTokens: number;
+  cost: {
+    input: number;
+    output: number;
+    cacheRead: number;
+    cacheWrite: number;
+    total: number;
+  };
+}
+
 export interface ToolEvent {
   type: "tool";
   toolCallId: string;

@@ -112,6 +112,7 @@ export type CommandType =
   | "create_agent"
   | "start_agent"
   | "stop_agent"
+  | "resume_agent"
   | "instruct_agent"
   | "set_model"
   | "get_diff"
@@ -123,6 +124,7 @@ const VALID_COMMANDS: CommandType[] = [
   "create_agent",
   "start_agent",
   "stop_agent",
+  "resume_agent",
   "instruct_agent",
   "set_model",
   "get_diff",

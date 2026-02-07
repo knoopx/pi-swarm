@@ -18,6 +18,8 @@ import {
   Wifi,
   WifiOff,
   ListPlus,
+  Coins,
+  Zap,
 } from "lucide-react";
 import { useAgentStore } from "./store";
 import { Button } from "./components/ui/button";
@@ -33,7 +35,10 @@ import {
 import { ConversationLog } from "./components/ConversationLog";
 import { ReviewMode, type ReviewComment } from "./components/ReviewMode";
 import { ModelSelector } from "./components/ModelSelector";
-import { extractTextFromConversation } from "./lib/conversation-state";
+import {
+  extractTextFromConversation,
+  type AccumulatedUsage,
+} from "./lib/conversation-state";
 import { isSpecAgent } from "./lib/store-utils";
 import { generateAgentName, parseModelString } from "./lib/shared";
 import type { Agent } from "./types";
@@ -116,6 +121,7 @@ export default function App() {
     createAgent,
     startAgent,
     stopAgent,
+    resumeAgent,
     instructAgent,
     setAgentModel,
     getDiff,
@@ -464,6 +470,9 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                           {selectedAgent.name}
                         </h2>
                         <StatusBadge status={selectedAgent.status} />
+                        <UsageDisplay
+                          usage={selectedAgent.conversation.usage}
+                        />
                       </div>
                       <p className="text-xs text-muted-foreground truncate max-w-md">
                         {selectedAgent.instruction.slice(0, 100)}
@@ -497,6 +506,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                       isSpecAgent={isSelectedSpecAgent}
                       onStart={() => startAgent(selectedAgent.id)}
                       onStop={() => stopAgent(selectedAgent.id)}
+                      onResume={() => resumeAgent(selectedAgent.id)}
                       onMerge={handleMerge}
                       onAcceptSpec={handleAcceptSpec}
                       onDelete={handleDelete}
@@ -569,13 +579,22 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                 {/* Instruction Input */}
                 {(selectedAgent.status === "running" ||
                   selectedAgent.status === "completed" ||
+                  selectedAgent.status === "stopped" ||
                   selectedAgent.status === "waiting") && (
                   <div className="border-t p-4 bg-card/30 shrink-0">
                     <InstructInput
-                      onSubmit={(msg) => instructAgent(selectedAgent.id, msg)}
-                      disabled={
-                        selectedAgent.status !== "running" &&
-                        selectedAgent.status !== "waiting"
+                      onSubmit={(msg) => {
+                        if (selectedAgent.status === "stopped") {
+                          resumeAgent(selectedAgent.id, msg);
+                        } else {
+                          instructAgent(selectedAgent.id, msg);
+                        }
+                      }}
+                      disabled={false}
+                      placeholder={
+                        selectedAgent.status === "stopped"
+                          ? "Send instruction to resume... (Ctrl+Enter)"
+                          : "Send follow-up instruction... (Ctrl+Enter)"
                       }
                     />
                   </div>
@@ -649,6 +668,7 @@ function AgentActions({
   isSpecAgent,
   onStart,
   onStop,
+  onResume,
   onMerge,
   onAcceptSpec,
   onDelete,
@@ -658,6 +678,7 @@ function AgentActions({
   isSpecAgent: boolean;
   onStart: () => void;
   onStop: () => void;
+  onResume: () => void;
   onMerge: () => void;
   onAcceptSpec: () => void;
   onDelete: () => void;
@@ -684,6 +705,17 @@ function AgentActions({
             </Button>
           </TooltipTrigger>
           <TooltipContent>Stop agent</TooltipContent>
+        </Tooltip>
+      )}
+
+      {agent.status === "stopped" && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button size="sm" variant="ghost" onClick={onResume}>
+              <Play className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Resume agent</TooltipContent>
         </Tooltip>
       )}
 
@@ -731,9 +763,11 @@ function AgentActions({
 function InstructInput({
   onSubmit,
   disabled,
+  placeholder = "Send follow-up instruction... (Ctrl+Enter)",
 }: {
   onSubmit: (msg: string) => void;
   disabled?: boolean;
+  placeholder?: string;
 }) {
   const [value, setValue] = useState("");
 
@@ -747,7 +781,7 @@ function InstructInput({
   return (
     <div className="flex gap-2 items-end">
       <Textarea
-        placeholder="Send follow-up instruction... (Ctrl+Enter)"
+        placeholder={placeholder}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
@@ -767,6 +801,58 @@ function InstructInput({
       >
         <Send className="h-4 w-4" />
       </Button>
+    </div>
+  );
+}
+
+function UsageDisplay({ usage }: { usage: AccumulatedUsage }) {
+  const formatNumber = (n: number) => {
+    if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+    return n.toString();
+  };
+
+  const formatCost = (n: number) => {
+    if (n < 0.01) return `$${n.toFixed(4)}`;
+    if (n < 1) return `$${n.toFixed(3)}`;
+    return `$${n.toFixed(2)}`;
+  };
+
+  if (usage.totalTokens === 0) return null;
+
+  return (
+    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center gap-1">
+            <Zap className="h-3 w-3" />
+            <span>{formatNumber(usage.totalTokens)}</span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <div className="space-y-1">
+            <div>Input: {formatNumber(usage.input)} tokens</div>
+            <div>Output: {formatNumber(usage.output)} tokens</div>
+            {usage.cacheRead > 0 && (
+              <div>Cache read: {formatNumber(usage.cacheRead)} tokens</div>
+            )}
+            {usage.cacheWrite > 0 && (
+              <div>Cache write: {formatNumber(usage.cacheWrite)} tokens</div>
+            )}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+      {usage.totalCost > 0 && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-1">
+              <Coins className="h-3 w-3" />
+              <span>{formatCost(usage.totalCost)}</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>Total cost for this session</TooltipContent>
+        </Tooltip>
+      )}
     </div>
   );
 }

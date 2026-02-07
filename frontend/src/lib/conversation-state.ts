@@ -1,6 +1,16 @@
 // Conversation state management - processes events incrementally
 
-import type { ToolEvent, ConversationEvent } from "./events";
+import type { ToolEvent, ConversationEvent, Usage } from "./events";
+
+// Accumulated usage stats across all messages
+export interface AccumulatedUsage {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+  totalTokens: number;
+  totalCost: number;
+}
 
 // Conversation state that gets updated incrementally
 export interface ConversationState {
@@ -10,6 +20,8 @@ export interface ConversationState {
   // Accumulate streaming text/thinking
   pendingText: string;
   pendingThinking: string;
+  // Accumulated usage stats
+  usage: AccumulatedUsage;
 }
 
 export function createConversationState(): ConversationState {
@@ -18,6 +30,29 @@ export function createConversationState(): ConversationState {
     toolsById: new Map(),
     pendingText: "",
     pendingThinking: "",
+    usage: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      totalCost: 0,
+    },
+  };
+}
+
+// Helper to accumulate usage from a message
+function accumulateUsage(
+  current: AccumulatedUsage,
+  messageUsage: Usage,
+): AccumulatedUsage {
+  return {
+    input: current.input + messageUsage.input,
+    output: current.output + messageUsage.output,
+    cacheRead: current.cacheRead + messageUsage.cacheRead,
+    cacheWrite: current.cacheWrite + messageUsage.cacheWrite,
+    totalTokens: current.totalTokens + messageUsage.totalTokens,
+    totalCost: current.totalCost + (messageUsage.cost?.total ?? 0),
   };
 }
 
@@ -177,7 +212,29 @@ export function processEvent(
       return { ...state, events, pendingThinking: "" };
     }
 
-    case "message_end":
+    case "message_end": {
+      const flushed = flushPendingContent(state);
+      // Extract usage from assistant message if present
+      const message = e.message as Record<string, unknown> | undefined;
+      let newUsage = state.usage;
+      if (
+        message &&
+        message.role === "assistant" &&
+        message.usage &&
+        typeof message.usage === "object"
+      ) {
+        const msgUsage = message.usage as Usage;
+        newUsage = accumulateUsage(state.usage, msgUsage);
+      }
+      return {
+        ...state,
+        events: flushed.events,
+        pendingText: flushed.pendingText,
+        pendingThinking: flushed.pendingThinking,
+        usage: newUsage,
+      };
+    }
+
     case "agent_end": {
       const flushed = flushPendingContent(state);
       return {

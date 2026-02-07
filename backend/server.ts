@@ -182,7 +182,7 @@ function getAvailableModels() {
   }));
 }
 
-async function startAgent(agent: Agent): Promise<void> {
+async function createAgentSessionAndSubscribe(agent: Agent): Promise<void> {
   const model = getModel(
     agent.provider as "anthropic",
     agent.model as "claude-sonnet-4-20250514",
@@ -202,7 +202,6 @@ async function startAgent(agent: Agent): Promise<void> {
 
   agent.session = session;
   agent.status = "running";
-  agent.output = "";
 
   session.subscribe((event: AgentSessionEvent) => {
     agent.output += JSON.stringify(event) + "\n";
@@ -221,12 +220,38 @@ async function startAgent(agent: Agent): Promise<void> {
       saveAgents();
     }
   });
+}
+
+async function startAgent(agent: Agent): Promise<void> {
+  agent.output = "";
+  await createAgentSessionAndSubscribe(agent);
 
   console.log(
     `[Agent ${agent.id}] Starting with instruction:`,
     agent.instruction.substring(0, 200),
   );
-  session.prompt(agent.instruction).catch((err) => {
+  agent.session!.prompt(agent.instruction).catch((err) => {
+    console.error(`Agent ${agent.id} error:`, err);
+    agent.status = "error";
+    agent.output +=
+      JSON.stringify({ type: "error", message: String(err) }) + "\n";
+    broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
+    saveAgents();
+  });
+
+  broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
+  saveAgents();
+}
+
+async function resumeAgent(agent: Agent, instruction: string): Promise<void> {
+  // Resume preserves existing output/conversation
+  await createAgentSessionAndSubscribe(agent);
+
+  console.log(
+    `[Agent ${agent.id}] Resuming with instruction:`,
+    instruction.substring(0, 200),
+  );
+  agent.session!.prompt(instruction).catch((err) => {
     console.error(`Agent ${agent.id} error:`, err);
     agent.status = "error";
     agent.output +=
@@ -395,6 +420,30 @@ async function handleWsCommand(
           return;
         }
         await stopAgent(agent);
+        sendResponse(ws, id, true, serializeAgent(agent));
+        break;
+      }
+
+      case "resume_agent": {
+        const agent = agents.get(message.agentId as string);
+        if (!agent) {
+          sendResponse(ws, id, false, undefined, "Agent not found");
+          return;
+        }
+        if (agent.status !== "stopped") {
+          sendResponse(
+            ws,
+            id,
+            false,
+            undefined,
+            "Agent must be stopped to resume",
+          );
+          return;
+        }
+        const instruction =
+          (message.instruction as string) ||
+          "Continue where you left off. Review what you've done so far and complete the remaining work.";
+        await resumeAgent(agent, instruction);
         sendResponse(ws, id, true, serializeAgent(agent));
         break;
       }

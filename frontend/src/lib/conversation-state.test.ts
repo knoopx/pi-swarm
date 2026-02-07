@@ -17,6 +17,14 @@ describe("conversation-state", () => {
       expect(state.toolsById.size).toBe(0);
       expect(state.pendingText).toBe("");
       expect(state.pendingThinking).toBe("");
+      expect(state.usage).toEqual({
+        input: 0,
+        output: 0,
+        cacheRead: 0,
+        cacheWrite: 0,
+        totalTokens: 0,
+        totalCost: 0,
+      });
     });
   });
 
@@ -197,6 +205,91 @@ describe("conversation-state", () => {
           content: "Final text",
         });
       });
+
+      it("accumulates usage from assistant messages", () => {
+        const state = createConversationState();
+
+        const messageWithUsage = {
+          type: "message_end",
+          message: {
+            role: "assistant",
+            usage: {
+              input: 100,
+              output: 50,
+              cacheRead: 10,
+              cacheWrite: 5,
+              totalTokens: 165,
+              cost: {
+                input: 0.001,
+                output: 0.002,
+                cacheRead: 0.0001,
+                cacheWrite: 0.00005,
+                total: 0.00315,
+              },
+            },
+          },
+        };
+
+        const newState = processEvent(state, messageWithUsage);
+
+        expect(newState.usage.input).toBe(100);
+        expect(newState.usage.output).toBe(50);
+        expect(newState.usage.cacheRead).toBe(10);
+        expect(newState.usage.cacheWrite).toBe(5);
+        expect(newState.usage.totalTokens).toBe(165);
+        expect(newState.usage.totalCost).toBeCloseTo(0.00315);
+      });
+
+      it("accumulates usage across multiple messages", () => {
+        let state = createConversationState();
+
+        state = processEvent(state, {
+          type: "message_end",
+          message: {
+            role: "assistant",
+            usage: {
+              input: 100,
+              output: 50,
+              cacheRead: 0,
+              cacheWrite: 0,
+              totalTokens: 150,
+              cost: {
+                input: 0,
+                output: 0,
+                cacheRead: 0,
+                cacheWrite: 0,
+                total: 0.01,
+              },
+            },
+          },
+        });
+
+        state = processEvent(state, {
+          type: "message_end",
+          message: {
+            role: "assistant",
+            usage: {
+              input: 200,
+              output: 100,
+              cacheRead: 0,
+              cacheWrite: 0,
+              totalTokens: 300,
+              cost: {
+                input: 0,
+                output: 0,
+                cacheRead: 0,
+                cacheWrite: 0,
+                total: 0.02,
+              },
+            },
+          },
+        });
+
+        expect(state.usage.input).toBe(300);
+        expect(state.usage.output).toBe(150);
+        expect(state.usage.totalTokens).toBe(450);
+        expect(state.usage.totalCost).toBeCloseTo(0.03);
+      });
     });
   });
 
@@ -297,6 +390,14 @@ describe("conversation-state", () => {
         toolsById: new Map(),
         pendingText: "streaming...",
         pendingThinking: "",
+        usage: {
+          input: 0,
+          output: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+          totalTokens: 0,
+          totalCost: 0,
+        },
       };
 
       const events = getDisplayEvents(state);
@@ -314,6 +415,14 @@ describe("conversation-state", () => {
         toolsById: new Map(),
         pendingText: "",
         pendingThinking: "thinking...",
+        usage: {
+          input: 0,
+          output: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+          totalTokens: 0,
+          totalCost: 0,
+        },
       };
 
       const events = getDisplayEvents(state);
@@ -343,6 +452,14 @@ describe("conversation-state", () => {
         toolsById: new Map(),
         pendingText: "",
         pendingThinking: "",
+        usage: {
+          input: 0,
+          output: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+          totalTokens: 0,
+          totalCost: 0,
+        },
       };
 
       const text = extractTextFromConversation(state);
@@ -355,6 +472,14 @@ describe("conversation-state", () => {
         toolsById: new Map(),
         pendingText: " streaming",
         pendingThinking: "",
+        usage: {
+          input: 0,
+          output: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+          totalTokens: 0,
+          totalCost: 0,
+        },
       };
 
       const text = extractTextFromConversation(state);

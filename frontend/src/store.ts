@@ -61,6 +61,7 @@ interface AgentStore {
   ) => Promise<Agent | null>;
   startAgent: (id: string) => Promise<boolean>;
   stopAgent: (id: string) => Promise<boolean>;
+  resumeAgent: (id: string, instruction?: string) => Promise<boolean>;
   instructAgent: (id: string, instruction: string) => Promise<boolean>;
   setAgentModel: (
     id: string,
@@ -302,6 +303,16 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
       return true;
     } catch (err) {
       console.error("Failed to stop agent:", err);
+      return false;
+    }
+  },
+
+  resumeAgent: async (id, instruction) => {
+    try {
+      await get().sendCommand("resume_agent", { agentId: id, instruction });
+      return true;
+    } catch (err) {
+      console.error("Failed to resume agent:", err);
       return false;
     }
   },
