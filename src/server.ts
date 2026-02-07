@@ -693,6 +693,7 @@ app
           cwd: BASE_PATH,
           agents: Array.from(agents.values()).map(serializeAgent),
           models: getAvailableModels(),
+          completions: getCompletions(),
         }),
       );
     },
@@ -718,12 +719,13 @@ app
       return proxyToVite(url.pathname);
     }
     return Bun.file(join(FRONTEND_DIST, "index.html"));
-  })
-  .listen(3001);
+  });
 
 // Load persisted agents, initialize resources, and start server
 await loadAgents();
 await initResourceLoader();
+
+app.listen(3001);
 
 if (IS_DEV) {
   console.log(`📡 Dev mode: proxying to Vite at ${VITE_DEV_SERVER}`);

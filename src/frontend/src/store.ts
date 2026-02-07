@@ -9,6 +9,7 @@ interface WsMessage {
   cwd?: string;
   agents?: Agent[];
   models?: ModelInfo[];
+  completions?: CompletionItem[];
   agent?: Agent;
   agentId?: string;
   event?: unknown;
@@ -146,10 +147,15 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
               ...agent,
               conversation: parseOutputToState(agent.output),
             }));
+            console.log(
+              "[Store] init received, completions:",
+              wsData.completions?.length || 0,
+            );
             set({
               cwd: wsData.cwd || null,
               agents: hydratedAgents,
               models: wsData.models || [],
+              completions: wsData.completions || [],
               loading: false,
             });
             break;

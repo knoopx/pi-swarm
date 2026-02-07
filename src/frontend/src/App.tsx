@@ -129,7 +129,6 @@ export default function App() {
     getDiff,
     mergeAgent,
     deleteAgent,
-    fetchCompletions,
   } = useAgentStore();
 
   const [instruction, setInstruction] = useState("");
@@ -162,13 +161,6 @@ export default function App() {
   useEffect(() => {
     connect();
   }, [connect]);
-
-  // Fetch completions when connected
-  useEffect(() => {
-    if (connected) {
-      fetchCompletions();
-    }
-  }, [connected, fetchCompletions]);
 
   const selectedAgent = agents.find((a) => a.id === selectedId);
   const isSelectedSpecAgent = selectedAgent

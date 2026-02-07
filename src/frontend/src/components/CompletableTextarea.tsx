@@ -77,6 +77,13 @@ const CompletableTextarea = React.forwardRef<
         const lineStart = lastNewline + 1;
         const currentLine = textBeforeCursor.slice(lineStart);
 
+        console.log("[CompletableTextarea] checkForSlashTrigger:", {
+          text,
+          cursorPos,
+          currentLine,
+          completionsCount: completions.length,
+        });
+
         // Check if current line starts with /
         if (currentLine.startsWith("/")) {
           // Extract the query part (everything after /)
@@ -91,7 +98,7 @@ const CompletableTextarea = React.forwardRef<
         setSearchQuery("");
         return false;
       },
-      [],
+      [completions.length],
     );
 
     // Handle text change
