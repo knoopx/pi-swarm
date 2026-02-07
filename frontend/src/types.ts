@@ -1,3 +1,5 @@
+import type { ConversationState } from "./lib/conversation-state";
+
 export interface Agent {
   id: string;
   name: string;
@@ -7,7 +9,8 @@ export interface Agent {
   basePath: string;
   createdAt: string;
   updatedAt: string;
-  output: string;
+  output: string; // Raw output for persistence/debugging
+  conversation: ConversationState; // Structured state for rendering
   modifiedFiles: string[];
   diffStat: string;
   model: string;

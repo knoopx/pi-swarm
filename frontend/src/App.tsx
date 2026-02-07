@@ -32,7 +32,7 @@ import {
 import { ConversationLog } from "./components/ConversationLog";
 import { ReviewMode, type ReviewComment } from "./components/ReviewMode";
 import { ModelSelector } from "./components/ModelSelector";
-import { extractTextFromOutput } from "./lib/parsing";
+import { extractTextFromConversation } from "./lib/conversation-state";
 import { generateAgentName, isSpecAgent } from "./lib/store-utils";
 import type { Agent } from "./types";
 
@@ -231,7 +231,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
   const handleAcceptSpec = useCallback(async () => {
     if (!selectedAgent) return;
 
-    let improvedSpec = extractTextFromOutput(selectedAgent.output);
+    let improvedSpec = extractTextFromConversation(selectedAgent.conversation);
     if (!improvedSpec) {
       improvedSpec = selectedAgent.instruction;
     }
@@ -494,7 +494,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                       className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
                     >
                       <ConversationLog
-                        output={selectedAgent.output}
+                        conversation={selectedAgent.conversation}
                         status={selectedAgent.status}
                         className="flex-1 rounded-lg border bg-muted/30"
                       />

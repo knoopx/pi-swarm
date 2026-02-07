@@ -190,7 +190,7 @@ export function AgentCard({
 
             <TabsContent value="output" className="mt-0">
               <ConversationLog
-                output={agent.output}
+                conversation={agent.conversation}
                 status={agent.status}
                 className="h-[400px] rounded-md border bg-black/50"
               />

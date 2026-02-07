@@ -1,5 +1,10 @@
 import { create } from "zustand";
 import type { Agent, ModelInfo } from "./types";
+import {
+  createConversationState,
+  parseOutputToState,
+  processEvent,
+} from "./lib/conversation-state";
 
 const API_BASE = "/api";
 const WS_URL = `ws://${window.location.host}/ws`;
@@ -94,8 +99,13 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
         switch (data.type) {
           case "init":
+            // Hydrate agents with conversation state from raw output
+            const hydratedAgents = (data.agents || []).map((agent) => ({
+              ...agent,
+              conversation: parseOutputToState(agent.output),
+            }));
             set({
-              agents: data.agents || [],
+              agents: hydratedAgents,
               models: data.models || [],
               loading: false,
             });
@@ -108,7 +118,11 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
                 if (state.agents.some((a) => a.id === data.agent!.id)) {
                   return state;
                 }
-                return { agents: [...state.agents, data.agent!] };
+                const newAgent = {
+                  ...data.agent!,
+                  conversation: parseOutputToState(data.agent!.output),
+                };
+                return { agents: [...state.agents, newAgent] };
               });
             }
             break;
@@ -117,7 +131,17 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
             if (data.agent) {
               set((state) => ({
                 agents: state.agents.map((a) =>
-                  a.id === data.agent!.id ? { ...a, ...data.agent } : a,
+                  a.id === data.agent!.id
+                    ? {
+                        ...a,
+                        ...data.agent,
+                        // Re-parse if output changed significantly (e.g., agent restart)
+                        conversation:
+                          data.agent!.output !== a.output
+                            ? parseOutputToState(data.agent!.output)
+                            : a.conversation,
+                      }
+                    : a,
                 ),
               }));
             }
@@ -140,7 +164,10 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
                   a.id === data.agentId
                     ? {
                         ...a,
+                        // Keep raw output for persistence/debugging
                         output: a.output + JSON.stringify(data.event) + "\n",
+                        // Process event incrementally into structured state
+                        conversation: processEvent(a.conversation, data.event),
                       }
                     : a,
                 ),
@@ -292,10 +319,16 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
       const res = await fetch(`${API_BASE}/agents/${id}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
+      const hydratedAgent = {
+        ...data,
+        conversation: parseOutputToState(data.output),
+      };
       set((state) => ({
-        agents: state.agents.map((a) => (a.id === id ? { ...a, ...data } : a)),
+        agents: state.agents.map((a) =>
+          a.id === id ? { ...a, ...hydratedAgent } : a,
+        ),
       }));
-      return data;
+      return hydratedAgent;
     } catch (err) {
       console.error("Failed to fetch agent:", err);
       return null;

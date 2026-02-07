@@ -19,24 +19,35 @@ import {
 } from "./ai-elements/tool";
 import { Thinking, ThinkingContent } from "./ai-elements/thinking";
 import type { ToolUIPart } from "ai";
-import { parseOutput, extractToolResult } from "../lib/parsing";
+import type { ConversationState } from "../lib/conversation-state";
+import { getDisplayEvents, extractToolResult } from "../lib/conversation-state";
 
 interface ConversationLogProps {
-  output: string;
+  conversation: ConversationState;
   status: string;
   className?: string;
 }
 
 export function ConversationLog({
-  output,
+  conversation,
   status,
   className,
 }: ConversationLogProps) {
-  const events = useMemo(() => parseOutput(output), [output]);
+  // Get events including pending streaming content
+  const events = useMemo(() => getDisplayEvents(conversation), [conversation]);
+
+  const isEmpty = events.length === 0;
 
   return (
     <Conversation className={className}>
       <ConversationContent className="gap-4">
+        {isEmpty && status === "running" && (
+          <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Starting...</span>
+          </div>
+        )}
+
         {events.map((event, i) => {
           if (event.type === "processing") {
             return (
@@ -96,14 +107,12 @@ export function ConversationLog({
           return null;
         })}
 
-        {status === "running" &&
-          events.length > 0 &&
-          events[events.length - 1].type !== "processing" && (
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Working...</span>
-            </div>
-          )}
+        {status === "running" && !isEmpty && (
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Working...</span>
+          </div>
+        )}
       </ConversationContent>
       <ConversationScrollButton />
     </Conversation>
