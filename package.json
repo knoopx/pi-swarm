@@ -1,0 +1,16 @@
+{
+  "name": "pi-swarm",
+  "version": "0.1.0",
+  "description": "Multi-agent orchestration for pi coding agents",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && bun run dev",
+    "dev:frontend": "cd frontend && bun run dev",
+    "build": "cd frontend && bun run build",
+    "start": "cd backend && bun run start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

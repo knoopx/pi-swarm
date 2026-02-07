@@ -1,0 +1,791 @@
+import { useState, useEffect, useCallback } from "react";
+import {
+  Bot,
+  Send,
+  Loader2,
+  X,
+  Play,
+  Square,
+  Trash2,
+  GitMerge,
+  Wand2,
+  Sparkles,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  PauseCircle,
+  XCircle,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
+import { useAgentStore } from "./store";
+import { Button } from "./components/ui/button";
+import { Textarea } from "./components/ui/textarea";
+import { Badge } from "./components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./components/ui/tooltip";
+import { ConversationLog } from "./components/ConversationLog";
+import { FilesList } from "./components/FilesList";
+import { DiffViewer } from "./components/DiffViewer";
+import { ReviewMode, type ReviewComment } from "./components/ReviewMode";
+import { ModelSelector } from "./components/ModelSelector";
+import { extractTextFromOutput } from "./lib/parsing";
+import { generateAgentName, isSpecAgent } from "./lib/store-utils";
+import type { Agent } from "./types";
+
+// Status configuration with icons and colors
+const statusConfig: Record<
+  Agent["status"],
+  {
+    variant:
+      | "default"
+      | "secondary"
+      | "destructive"
+      | "outline"
+      | "success"
+      | "warning";
+    label: string;
+    icon: React.ReactNode;
+    description: string;
+  }
+> = {
+  pending: {
+    variant: "secondary",
+    label: "Pending",
+    icon: <Clock className="h-3 w-3" />,
+    description: "Waiting to start",
+  },
+  running: {
+    variant: "warning",
+    label: "Running",
+    icon: <Loader2 className="h-3 w-3 animate-spin" />,
+    description: "Agent is working",
+  },
+  completed: {
+    variant: "success",
+    label: "Completed",
+    icon: <CheckCircle2 className="h-3 w-3" />,
+    description: "Task finished successfully",
+  },
+  waiting: {
+    variant: "default",
+    label: "Awaiting Review",
+    icon: <AlertCircle className="h-3 w-3" />,
+    description: "Ready for your review",
+  },
+  stopped: {
+    variant: "outline",
+    label: "Stopped",
+    icon: <PauseCircle className="h-3 w-3" />,
+    description: "Manually stopped",
+  },
+  error: {
+    variant: "destructive",
+    label: "Error",
+    icon: <XCircle className="h-3 w-3" />,
+    description: "Something went wrong",
+  },
+};
+
+// Sort agents: running first, then by updated time
+function sortAgents(agents: Agent[]): Agent[] {
+  return [...agents].sort((a, b) => {
+    // Running agents first
+    if (a.status === "running" && b.status !== "running") return -1;
+    if (b.status === "running" && a.status !== "running") return 1;
+    // Then by updated time (most recent first)
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  });
+}
+
+export default function App() {
+  const {
+    agents,
+    models,
+    loading,
+    connected,
+    selectedId,
+    diff,
+    connect,
+    setSelectedId,
+    createAgent,
+    startAgent,
+    stopAgent,
+    instructAgent,
+    setAgentModel,
+    getDiff,
+    mergeAgent,
+    deleteAgent,
+  } = useAgentStore();
+
+  const [instruction, setInstruction] = useState("");
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    return localStorage.getItem("pi-swarm-model") || "";
+  });
+  const [creating, setCreating] = useState(false);
+  const [refining, setRefining] = useState(false);
+  const [activeTab, setActiveTab] = useState("output");
+
+  // Set default model when models load
+  useEffect(() => {
+    if (models.length > 0 && !selectedModel) {
+      const preferred = models.find(
+        (m) => m.modelId === "claude-sonnet-4-20250514",
+      );
+      const defaultModel = preferred
+        ? `${preferred.provider}/${preferred.modelId}`
+        : `${models[0].provider}/${models[0].modelId}`;
+      setSelectedModel(defaultModel);
+      localStorage.setItem("pi-swarm-model", defaultModel);
+    }
+  }, [models, selectedModel]);
+
+  const handleModelChange = useCallback((model: string) => {
+    setSelectedModel(model);
+    localStorage.setItem("pi-swarm-model", model);
+  }, []);
+
+  useEffect(() => {
+    connect();
+  }, [connect]);
+
+  const selectedAgent = agents.find((a) => a.id === selectedId);
+  const isSelectedSpecAgent = selectedAgent
+    ? isSpecAgent(selectedAgent)
+    : false;
+  const sortedAgents = sortAgents(agents);
+  const runningCount = agents.filter((a) => a.status === "running").length;
+
+  const parseModel = useCallback((modelString: string) => {
+    const parts = modelString.split("/");
+    if (parts.length < 2) return { provider: undefined, modelId: undefined };
+    return { provider: parts[0], modelId: parts.slice(1).join("/") };
+  }, []);
+
+  const handleCreate = useCallback(async () => {
+    if (!instruction.trim()) return;
+
+    setCreating(true);
+    const name = generateAgentName(instruction);
+    const { provider, modelId } = parseModel(selectedModel);
+
+    const agent = await createAgent(name, instruction, provider, modelId);
+    if (agent) {
+      await startAgent(agent.id);
+      setSelectedId(agent.id);
+    }
+    setInstruction("");
+    setCreating(false);
+  }, [
+    instruction,
+    selectedModel,
+    createAgent,
+    startAgent,
+    setSelectedId,
+    parseModel,
+  ]);
+
+  const handleRefine = useCallback(async () => {
+    if (!instruction.trim()) return;
+
+    setRefining(true);
+    const { provider, modelId } = parseModel(selectedModel);
+    const refinePrompt = `You are a task specification expert. Analyze the following task request and create a detailed, well-structured specification that a coding agent can follow.
+
+Original task request:
+${instruction}
+
+Please improve this task by:
+1. Clarifying any ambiguous requirements
+2. Breaking down into clear steps if complex
+3. Identifying potential edge cases
+4. Specifying expected outcomes
+5. Adding any missing technical details
+
+Output ONLY the improved task specification, ready to be used as instructions for another agent. Be concise but thorough.`;
+
+    const agent = await createAgent(
+      "spec-" + Date.now().toString(36),
+      refinePrompt,
+      provider,
+      modelId,
+    );
+    if (agent) {
+      await startAgent(agent.id);
+      setSelectedId(agent.id);
+    }
+    setInstruction("");
+    setRefining(false);
+  }, [
+    instruction,
+    selectedModel,
+    createAgent,
+    startAgent,
+    setSelectedId,
+    parseModel,
+  ]);
+
+  const handleAcceptSpec = useCallback(async () => {
+    if (!selectedAgent) return;
+
+    let improvedSpec = extractTextFromOutput(selectedAgent.output);
+    if (!improvedSpec) {
+      improvedSpec = selectedAgent.instruction;
+    }
+
+    const name = generateAgentName(improvedSpec);
+    const newAgent = await createAgent(name, improvedSpec);
+    if (newAgent) {
+      await deleteAgent(selectedAgent.id);
+      setSelectedId(newAgent.id);
+    }
+  }, [selectedAgent, createAgent, deleteAgent, setSelectedId]);
+
+  const handleSelectAgent = useCallback(
+    async (id: string) => {
+      setSelectedId(id);
+      await getDiff(id);
+    },
+    [setSelectedId, getDiff],
+  );
+
+  const handleTabChange = useCallback(
+    async (tab: string) => {
+      setActiveTab(tab);
+      if (tab === "diff" && selectedId && !diff) {
+        await getDiff(selectedId);
+      }
+    },
+    [selectedId, diff, getDiff],
+  );
+
+  const handleMerge = useCallback(async () => {
+    if (!selectedAgent) return;
+    const success = await mergeAgent(selectedAgent.id);
+    if (success) {
+      await deleteAgent(selectedAgent.id);
+      setSelectedId(null);
+    }
+  }, [selectedAgent, mergeAgent, deleteAgent, setSelectedId]);
+
+  const handleDelete = useCallback(async () => {
+    if (!selectedAgent) return;
+    await deleteAgent(selectedAgent.id);
+    setSelectedId(null);
+  }, [selectedAgent, deleteAgent, setSelectedId]);
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <div className="h-screen flex flex-col bg-background">
+        {/* Header */}
+        <header className="h-14 border-b bg-card/50 backdrop-blur-sm flex items-center px-4 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+              <Bot className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="font-semibold text-sm">Pi Swarm</h1>
+              <p className="text-xs text-muted-foreground">
+                {agents.length} agent{agents.length !== 1 ? "s" : ""}
+                {runningCount > 0 && (
+                  <span className="text-yellow-500 ml-1">
+                    · {runningCount} running
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="ml-auto flex items-center gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs ${
+                    connected
+                      ? "bg-green-500/10 text-green-500"
+                      : "bg-red-500/10 text-red-500"
+                  }`}
+                >
+                  {connected ? (
+                    <Wifi className="h-3 w-3" />
+                  ) : (
+                    <WifiOff className="h-3 w-3" />
+                  )}
+                  <span>{connected ? "Connected" : "Disconnected"}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                {connected
+                  ? "Real-time updates active"
+                  : "Attempting to reconnect..."}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </header>
+
+        <div className="flex-1 flex overflow-hidden">
+          {/* Sidebar */}
+          <aside className="w-80 border-r bg-card/30 flex flex-col shrink-0">
+            {/* New Task Form */}
+            <div className="p-4 border-b space-y-3">
+              <ModelSelector
+                models={models}
+                value={selectedModel}
+                onChange={handleModelChange}
+                disabled={creating || refining}
+                className="w-full"
+                placeholder={
+                  models.length === 0 ? "Loading models..." : "Select model..."
+                }
+              />
+              <Textarea
+                placeholder="Describe your task... (Ctrl+Enter to start)"
+                value={instruction}
+                onChange={(e) => setInstruction(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    handleCreate();
+                  }
+                }}
+                className="min-h-[80px] resize-none text-sm"
+                disabled={creating || refining}
+              />
+              <div className="flex gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleRefine}
+                      disabled={refining || creating || !instruction.trim()}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      {refining ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Wand2 className="h-4 w-4" />
+                      )}
+                      <span className="ml-2">Refine</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Let AI improve your task description
+                  </TooltipContent>
+                </Tooltip>
+                <Button
+                  onClick={handleCreate}
+                  disabled={creating || refining || !instruction.trim()}
+                  size="sm"
+                  className="flex-1"
+                >
+                  {creating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  <span className="ml-2">Start</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Agent List */}
+            <div className="flex-1 overflow-auto">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center h-32 gap-2">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    Loading agents...
+                  </span>
+                </div>
+              ) : sortedAgents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-32 gap-2 p-4">
+                  <Bot className="h-8 w-8 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground text-center">
+                    No agents yet. Create a task above to get started.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-2 space-y-1">
+                  {sortedAgents.map((agent) => (
+                    <AgentListItem
+                      key={agent.id}
+                      agent={agent}
+                      isSelected={selectedId === agent.id}
+                      onSelect={() => handleSelectAgent(agent.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* Main Content */}
+          <main className="flex-1 flex flex-col overflow-hidden bg-background">
+            {selectedAgent ? (
+              <>
+                {/* Agent Header */}
+                <div className="h-14 border-b bg-card/30 flex items-center justify-between px-4 shrink-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h2 className="font-semibold truncate">
+                          {selectedAgent.name}
+                        </h2>
+                        <StatusBadge status={selectedAgent.status} />
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate max-w-md">
+                        {selectedAgent.instruction.slice(0, 100)}
+                        {selectedAgent.instruction.length > 100 ? "..." : ""}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <ModelSelector
+                      models={models}
+                      value={`${selectedAgent.provider}/${selectedAgent.model}`}
+                      onChange={(value) => {
+                        const { provider, modelId } = parseModel(value);
+                        if (provider && modelId) {
+                          setAgentModel(selectedAgent.id, provider, modelId);
+                        }
+                      }}
+                      disabled={selectedAgent.status === "running"}
+                      className="h-8 w-[180px]"
+                    />
+
+                    <div className="h-6 w-px bg-border mx-1" />
+
+                    <AgentActions
+                      agent={selectedAgent}
+                      isSpecAgent={isSelectedSpecAgent}
+                      onStart={() => startAgent(selectedAgent.id)}
+                      onStop={() => stopAgent(selectedAgent.id)}
+                      onMerge={handleMerge}
+                      onAcceptSpec={handleAcceptSpec}
+                      onDelete={handleDelete}
+                      onClose={() => setSelectedId(null)}
+                    />
+                  </div>
+                </div>
+
+                {/* Tabs */}
+                <Tabs
+                  value={activeTab}
+                  onValueChange={handleTabChange}
+                  className="flex-1 flex flex-col overflow-hidden"
+                >
+                  <div className="px-4 pt-3">
+                    <TabsList className="w-fit">
+                      <TabsTrigger value="output" className="gap-2">
+                        Output
+                      </TabsTrigger>
+                      <TabsTrigger value="files" className="gap-2">
+                        Files
+                        {(selectedAgent.modifiedFiles?.length || 0) > 0 && (
+                          <Badge
+                            variant="secondary"
+                            className="ml-1 h-5 px-1.5"
+                          >
+                            {selectedAgent.modifiedFiles?.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                      <TabsTrigger value="diff">Diff</TabsTrigger>
+                      <TabsTrigger value="review">Review</TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  <div className="flex-1 overflow-hidden p-4 pt-3">
+                    <TabsContent
+                      value="output"
+                      className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
+                    >
+                      <ConversationLog
+                        output={selectedAgent.output}
+                        status={selectedAgent.status}
+                        className="flex-1 rounded-lg border bg-muted/30"
+                      />
+                    </TabsContent>
+
+                    <TabsContent
+                      value="files"
+                      className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
+                    >
+                      <FilesList
+                        files={selectedAgent.modifiedFiles || []}
+                        diffStat={selectedAgent.diffStat || ""}
+                        className="flex-1 rounded-lg border bg-muted/20"
+                      />
+                    </TabsContent>
+
+                    <TabsContent
+                      value="diff"
+                      className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
+                    >
+                      <DiffViewer
+                        diff={diff || ""}
+                        className="flex-1 rounded-lg border bg-muted/30"
+                      />
+                    </TabsContent>
+
+                    <TabsContent
+                      value="review"
+                      className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
+                    >
+                      <ReviewMode
+                        diff={diff || ""}
+                        onSubmitReview={(comments: ReviewComment[]) => {
+                          const reviewText = comments
+                            .map(
+                              (c) =>
+                                `- ${c.file}:${c.lineNumber} [${c.type}]: ${c.comment}`,
+                            )
+                            .join("\n");
+                          instructAgent(
+                            selectedAgent.id,
+                            `Please address these code review comments:\n\n${reviewText}`,
+                          );
+                        }}
+                        className="flex-1 rounded-lg border overflow-hidden"
+                      />
+                    </TabsContent>
+                  </div>
+                </Tabs>
+
+                {/* Instruction Input */}
+                {(selectedAgent.status === "running" ||
+                  selectedAgent.status === "completed" ||
+                  selectedAgent.status === "waiting") && (
+                  <div className="border-t p-4 bg-card/30 shrink-0">
+                    <InstructInput
+                      onSubmit={(msg) => instructAgent(selectedAgent.id, msg)}
+                      disabled={
+                        selectedAgent.status !== "running" &&
+                        selectedAgent.status !== "waiting"
+                      }
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <EmptyState />
+            )}
+          </main>
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+}
+
+// Sub-components
+
+function StatusBadge({ status }: { status: Agent["status"] }) {
+  const config = statusConfig[status];
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Badge variant={config.variant} className="gap-1.5">
+          {config.icon}
+          {config.label}
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent>{config.description}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function AgentListItem({
+  agent,
+  isSelected,
+  onSelect,
+}: {
+  agent: Agent;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const config = statusConfig[agent.status];
+
+  return (
+    <button
+      onClick={onSelect}
+      className={`w-full text-left p-3 rounded-lg transition-all ${
+        isSelected
+          ? "bg-primary/10 border border-primary/30 shadow-sm"
+          : "hover:bg-muted/50 border border-transparent"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <span className="font-medium text-sm truncate flex-1">
+          {agent.name}
+        </span>
+        <Badge variant={config.variant} className="gap-1 text-xs shrink-0">
+          {config.icon}
+          <span className="hidden sm:inline">{config.label}</span>
+        </Badge>
+      </div>
+      <p className="text-xs text-muted-foreground line-clamp-2">
+        {agent.instruction}
+      </p>
+    </button>
+  );
+}
+
+function AgentActions({
+  agent,
+  isSpecAgent,
+  onStart,
+  onStop,
+  onMerge,
+  onAcceptSpec,
+  onDelete,
+  onClose,
+}: {
+  agent: Agent;
+  isSpecAgent: boolean;
+  onStart: () => void;
+  onStop: () => void;
+  onMerge: () => void;
+  onAcceptSpec: () => void;
+  onDelete: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      {agent.status === "pending" && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button size="sm" variant="ghost" onClick={onStart}>
+              <Play className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Start agent</TooltipContent>
+        </Tooltip>
+      )}
+
+      {agent.status === "running" && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button size="sm" variant="ghost" onClick={onStop}>
+              <Square className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Stop agent</TooltipContent>
+        </Tooltip>
+      )}
+
+      {(agent.status === "completed" ||
+        agent.status === "waiting" ||
+        agent.status === "stopped") &&
+        (isSpecAgent ? (
+          <Button size="sm" variant="default" onClick={onAcceptSpec}>
+            <Sparkles className="h-4 w-4 mr-1.5" />
+            Accept Spec
+          </Button>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="outline" onClick={onMerge}>
+                <GitMerge className="h-4 w-4 mr-1.5" />
+                Merge
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Merge changes to main workspace</TooltipContent>
+          </Tooltip>
+        ))}
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button size="sm" variant="ghost" onClick={onDelete}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Delete agent</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button size="sm" variant="ghost" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Close panel</TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
+
+function InstructInput({
+  onSubmit,
+  disabled,
+}: {
+  onSubmit: (msg: string) => void;
+  disabled?: boolean;
+}) {
+  const [value, setValue] = useState("");
+
+  const handleSubmit = () => {
+    if (value.trim()) {
+      onSubmit(value);
+      setValue("");
+    }
+  };
+
+  return (
+    <div className="flex gap-2">
+      <Textarea
+        placeholder="Send follow-up instruction... (Ctrl+Enter)"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            handleSubmit();
+          }
+        }}
+        className="min-h-[44px] resize-none text-sm"
+        rows={1}
+        disabled={disabled}
+      />
+      <Button onClick={handleSubmit} disabled={!value.trim() || disabled}>
+        <Send className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="flex-1 flex items-center justify-center">
+      <div className="text-center max-w-md px-4">
+        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-muted">
+          <Bot className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h2 className="text-lg font-semibold mb-2">Welcome to Pi Swarm</h2>
+        <p className="text-muted-foreground text-sm mb-4">
+          Create a new task in the sidebar to spawn an AI coding agent. Each
+          agent works in its own isolated workspace and can be reviewed before
+          merging.
+        </p>
+        <div className="text-xs text-muted-foreground space-y-1">
+          <p>
+            <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs">
+              Ctrl
+            </kbd>{" "}
+            +{" "}
+            <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs">
+              Enter
+            </kbd>{" "}
+            to start a task
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
