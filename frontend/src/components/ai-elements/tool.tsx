@@ -66,6 +66,7 @@ export type ToolPart = ToolUIPart | DynamicToolUIPart;
 export type ToolHeaderProps = {
   title?: string;
   className?: string;
+  input?: ToolPart["input"];
 } & (
   | { type: ToolUIPart["type"]; state: ToolUIPart["state"]; toolName?: never }
   | {
@@ -102,16 +103,30 @@ export const getStatusBadge = (status: ToolPart["state"]) => (
   </Badge>
 );
 
+const getFirstParamPreview = (input: ToolPart["input"]): string | null => {
+  if (!input || typeof input !== "object") return null;
+  const entries = Object.entries(input as Record<string, unknown>);
+  if (entries.length === 0) return null;
+  const [, value] = entries[0];
+  if (typeof value === "string") {
+    return value.length > 60 ? `${value.slice(0, 60)}…` : value;
+  }
+  return null;
+};
+
 export const ToolHeader = ({
   className,
   title,
   type,
   state,
   toolName,
+  input,
   ...props
 }: ToolHeaderProps) => {
   const derivedName =
     type === "dynamic-tool" ? toolName : type.split("-").slice(1).join("-");
+
+  const firstParamPreview = useMemo(() => getFirstParamPreview(input), [input]);
 
   return (
     <CollapsibleTrigger
@@ -121,12 +136,21 @@ export const ToolHeader = ({
       )}
       {...props}
     >
-      <div className="flex items-center gap-2">
-        <WrenchIcon className="size-4 text-muted-foreground" />
-        <span className="font-medium text-sm">{title ?? derivedName}</span>
-        {getStatusBadge(state)}
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <WrenchIcon className="size-4 shrink-0 text-muted-foreground" />
+        <span className="shrink-0 font-medium text-sm">
+          {title ?? derivedName}
+        </span>
+        {firstParamPreview && (
+          <span className="truncate text-muted-foreground text-xs">
+            {firstParamPreview}
+          </span>
+        )}
       </div>
-      <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+      <div className="flex shrink-0 items-center gap-2">
+        {getStatusBadge(state)}
+        <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+      </div>
     </CollapsibleTrigger>
   );
 };

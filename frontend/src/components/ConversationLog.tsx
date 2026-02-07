@@ -73,6 +73,7 @@ export function ConversationLog({
                   type={`tool-${event.toolName}` as ToolUIPart["type"]}
                   state={event.state}
                   title={event.toolName}
+                  input={event.args}
                 />
                 <ToolContent>
                   <ToolInput input={event.args} />
