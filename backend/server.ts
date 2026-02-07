@@ -112,14 +112,14 @@ function sendResponse(
 async function createWorkspace(
   basePath: string,
   id: string,
-  description: string,
+  instruction: string,
 ): Promise<string> {
   const workspace = buildWorkspacePath(basePath, id);
   await Bun.$`mkdir -p ${basePath}/.pi/swarm/workspaces`.quiet();
   await Bun.$`cd ${basePath} && jj workspace add ${workspace} --name ${id}`.quiet();
-  // Create a new change with the user prompt as description
-  if (description) {
-    await Bun.$`cd ${workspace} && jj new -m ${description}`.quiet();
+  // Create a new change with the user's instruction as description
+  if (instruction) {
+    await Bun.$`cd ${workspace} && jj new -m ${instruction}`.quiet();
   }
   return workspace;
 }
@@ -375,7 +375,12 @@ async function handleWsCommand(
     switch (type) {
       case "create_agent": {
         const agentId = generateId();
-        const workspace = await createWorkspace(BASE_PATH, agentId);
+        const instruction = (message.instruction as string) || "";
+        const workspace = await createWorkspace(
+          BASE_PATH,
+          agentId,
+          instruction,
+        );
 
         let { provider, model: modelId } = message as {
           provider?: string;
@@ -391,7 +396,7 @@ async function handleWsCommand(
           id: agentId,
           name: (message.name as string) || "unnamed",
           status: "pending",
-          instruction: (message.instruction as string) || "",
+          instruction,
           workspace,
           basePath: BASE_PATH,
           createdAt: nowTs(),
