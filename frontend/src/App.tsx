@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Bot,
   Send,
@@ -166,6 +166,53 @@ export default function App() {
     : false;
   const sortedAgents = sortAgents(agents);
   const runningCount = agents.filter((a) => a.status === "running").length;
+
+  // Auto-refresh diff when file-related tools complete
+  const seenToolCallsRef = useRef<Set<string>>(new Set());
+  const diffRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  useEffect(() => {
+    // Auto-refresh diff when file-related tools complete (for badge count)
+    if (!selectedAgent) return;
+
+    const fileModifyingTools = new Set(["Write", "Edit"]);
+    const completedFileTools: string[] = [];
+
+    // Find newly completed file-modifying tool calls
+    for (const [toolId, tool] of selectedAgent.conversation.toolsById) {
+      if (
+        fileModifyingTools.has(tool.toolName) &&
+        (tool.state === "output-available" || tool.state === "output-error") &&
+        !seenToolCallsRef.current.has(toolId)
+      ) {
+        completedFileTools.push(toolId);
+        seenToolCallsRef.current.add(toolId);
+      }
+    }
+
+    // If new file tools completed, debounce refresh diff
+    if (completedFileTools.length > 0) {
+      if (diffRefreshTimeoutRef.current) {
+        clearTimeout(diffRefreshTimeoutRef.current);
+      }
+      diffRefreshTimeoutRef.current = setTimeout(() => {
+        getDiff(selectedAgent.id);
+      }, 500);
+    }
+
+    return () => {
+      if (diffRefreshTimeoutRef.current) {
+        clearTimeout(diffRefreshTimeoutRef.current);
+      }
+    };
+  }, [selectedAgent?.conversation.toolsById, selectedAgent?.id, getDiff]);
+
+  // Reset seen tools when switching agents
+  useEffect(() => {
+    seenToolCallsRef.current.clear();
+  }, [selectedId]);
 
   // Count changed files from diff
   const changedFilesCount = useMemo(() => {

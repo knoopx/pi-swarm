@@ -109,10 +109,18 @@ function sendResponse(
   ws.send(JSON.stringify(response));
 }
 
-async function createWorkspace(basePath: string, id: string): Promise<string> {
+async function createWorkspace(
+  basePath: string,
+  id: string,
+  description: string,
+): Promise<string> {
   const workspace = buildWorkspacePath(basePath, id);
   await Bun.$`mkdir -p ${basePath}/.pi/swarm/workspaces`.quiet();
   await Bun.$`cd ${basePath} && jj workspace add ${workspace} --name ${id}`.quiet();
+  // Create a new change with the user prompt as description
+  if (description) {
+    await Bun.$`cd ${workspace} && jj new -m ${description}`.quiet();
+  }
   return workspace;
 }
 
