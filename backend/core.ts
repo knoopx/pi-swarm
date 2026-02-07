@@ -268,6 +268,46 @@ export function buildWorkspacePath(basePath: string, id: string): string {
   return `${basePath}/.pi/swarm/workspaces/${id}`;
 }
 
+// Session path helpers
+
+export function buildSessionsDir(basePath: string): string {
+  return `${basePath}/.pi/swarm/sessions`;
+}
+
+export function buildAgentSessionDir(
+  basePath: string,
+  agentId: string,
+): string {
+  return `${buildSessionsDir(basePath)}/${agentId}`;
+}
+
+export function buildAgentMetadataPath(
+  basePath: string,
+  agentId: string,
+): string {
+  return `${buildAgentSessionDir(basePath, agentId)}/agent.json`;
+}
+
+// Agent resume vs start decision
+
+export type AgentActionType =
+  | "start_fresh"
+  | "resume_session"
+  | "continue_active";
+
+export function determineAgentAction(
+  hasActiveSession: boolean,
+  status: Agent["status"],
+): AgentActionType {
+  if (hasActiveSession && (status === "running" || status === "waiting")) {
+    return "continue_active";
+  }
+  if (status === "stopped") {
+    return "resume_session";
+  }
+  return "start_fresh";
+}
+
 // Name generation from instruction
 
 export function generateNameFromInstruction(instruction: string): string {

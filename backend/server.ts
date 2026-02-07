@@ -16,6 +16,10 @@ import {
   nowTs,
   serializeAgent,
   buildWorkspacePath,
+  buildAgentSessionDir,
+  buildAgentMetadataPath,
+  buildSessionsDir,
+  determineAgentAction,
   type Agent as CoreAgent,
 } from "./core";
 
@@ -48,35 +52,59 @@ const FRONTEND_DIST = join(BASE_PATH, "frontend", "dist");
 const AGENT_DIR = join(process.env.HOME || "~", ".pi", "agent");
 const IS_DEV = !existsSync(join(FRONTEND_DIST, "index.html"));
 const VITE_DEV_SERVER = "http://localhost:3000";
-const SWARM_DIR = join(BASE_PATH, ".pi", "swarm");
-const AGENTS_FILE = join(SWARM_DIR, "agents.json");
+const SESSIONS_DIR = buildSessionsDir(BASE_PATH);
+
+// Per-agent session directory helpers (using core functions)
+function getAgentSessionDir(agentId: string): string {
+  return buildAgentSessionDir(BASE_PATH, agentId);
+}
+
+function getAgentMetadataPath(agentId: string): string {
+  return buildAgentMetadataPath(BASE_PATH, agentId);
+}
 
 // Persistence helpers
-async function ensureSwarmDir() {
-  if (!existsSync(SWARM_DIR)) {
-    await Bun.$`mkdir -p ${SWARM_DIR}`.quiet();
+async function ensureSessionDir(agentId: string) {
+  const dir = getAgentSessionDir(agentId);
+  if (!existsSync(dir)) {
+    await Bun.$`mkdir -p ${dir}`.quiet();
   }
 }
 
-async function saveAgents() {
-  await ensureSwarmDir();
-  const data = Array.from(agents.values()).map(serializeAgent);
-  await Bun.write(AGENTS_FILE, JSON.stringify(data, null, 2));
+async function saveAgent(agent: Agent) {
+  await ensureSessionDir(agent.id);
+  const metadataPath = getAgentMetadataPath(agent.id);
+  await Bun.write(metadataPath, JSON.stringify(serializeAgent(agent), null, 2));
+}
+
+async function deleteAgentSession(agentId: string) {
+  const dir = getAgentSessionDir(agentId);
+  if (existsSync(dir)) {
+    await Bun.$`rm -rf ${dir}`.quiet();
+  }
 }
 
 async function loadAgents() {
   try {
-    if (existsSync(AGENTS_FILE)) {
-      const data = await Bun.file(AGENTS_FILE).json();
-      for (const agentData of data) {
+    if (!existsSync(SESSIONS_DIR)) {
+      return;
+    }
+
+    const entries = await Bun.$`ls -1 ${SESSIONS_DIR}`.quiet();
+    const agentIds = entries.stdout.toString().split("\n").filter(Boolean);
+
+    for (const agentId of agentIds) {
+      const metadataPath = getAgentMetadataPath(agentId);
+      if (existsSync(metadataPath)) {
+        const agentData = await Bun.file(metadataPath).json();
         // Reset running agents to stopped on restart
         if (agentData.status === "running") {
           agentData.status = "stopped";
         }
         agents.set(agentData.id, agentData);
       }
-      console.log(`📂 Loaded ${agents.size} agents from disk`);
     }
+    console.log(`📂 Loaded ${agents.size} agents from ${SESSIONS_DIR}`);
   } catch (err) {
     console.error("Failed to load agents:", err);
   }
@@ -96,6 +124,25 @@ function broadcast(event: { type: string; [key: string]: unknown }) {
       wsClients.delete(client);
     }
   }
+}
+
+function broadcastAgentUpdate(agent: Agent) {
+  broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
+}
+
+function handleAgentError(agent: Agent, err: unknown, context: string) {
+  console.error(`Agent ${agent.id} ${context}:`, err);
+  agent.status = "error";
+  agent.output +=
+    JSON.stringify({ type: "error", message: String(err) }) + "\n";
+  broadcastAgentUpdate(agent);
+  saveAgent(agent);
+}
+
+async function updateAndPersistAgent(agent: Agent) {
+  agent.updatedAt = nowTs();
+  broadcastAgentUpdate(agent);
+  await saveAgent(agent);
 }
 
 function sendResponse(
@@ -190,7 +237,10 @@ function getAvailableModels() {
   }));
 }
 
-async function createAgentSessionAndSubscribe(agent: Agent): Promise<void> {
+async function createAgentSessionAndSubscribe(
+  agent: Agent,
+  options: { resume?: boolean } = {},
+): Promise<void> {
   const model = getModel(
     agent.provider as "anthropic",
     agent.model as "claude-sonnet-4-20250514",
@@ -199,13 +249,21 @@ async function createAgentSessionAndSubscribe(agent: Agent): Promise<void> {
     throw new Error(`Model ${agent.provider}/${agent.model} not found`);
   }
 
+  await ensureSessionDir(agent.id);
+  const sessionDir = getAgentSessionDir(agent.id);
+
+  // Use continueRecent to restore session history, or create for fresh start
+  const sessionManager = options.resume
+    ? SessionManager.continueRecent(agent.workspace, sessionDir)
+    : SessionManager.create(agent.workspace, sessionDir);
+
   const { session } = await createAgentSession({
     cwd: agent.workspace,
     agentDir: AGENT_DIR,
     model,
     authStorage,
     modelRegistry,
-    sessionManager: SessionManager.inMemory(),
+    sessionManager,
   });
 
   agent.session = session;
@@ -223,9 +281,7 @@ async function createAgentSessionAndSubscribe(agent: Agent): Promise<void> {
 
     if (event.type === "agent_end") {
       agent.status = "waiting";
-      agent.updatedAt = nowTs();
-      broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
-      saveAgents();
+      updateAndPersistAgent(agent);
     }
   });
 }
@@ -239,37 +295,25 @@ async function startAgent(agent: Agent): Promise<void> {
     agent.instruction.substring(0, 200),
   );
   agent.session!.prompt(agent.instruction).catch((err) => {
-    console.error(`Agent ${agent.id} error:`, err);
-    agent.status = "error";
-    agent.output +=
-      JSON.stringify({ type: "error", message: String(err) }) + "\n";
-    broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
-    saveAgents();
+    handleAgentError(agent, err, "start error");
   });
 
-  broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
-  saveAgents();
+  await updateAndPersistAgent(agent);
 }
 
 async function resumeAgent(agent: Agent, instruction: string): Promise<void> {
-  // Resume preserves existing output/conversation
-  await createAgentSessionAndSubscribe(agent);
+  // Resume restores session history via SessionManager.continueRecent
+  await createAgentSessionAndSubscribe(agent, { resume: true });
 
   console.log(
     `[Agent ${agent.id}] Resuming with instruction:`,
     instruction.substring(0, 200),
   );
   agent.session!.prompt(instruction).catch((err) => {
-    console.error(`Agent ${agent.id} error:`, err);
-    agent.status = "error";
-    agent.output +=
-      JSON.stringify({ type: "error", message: String(err) }) + "\n";
-    broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
-    saveAgents();
+    handleAgentError(agent, err, "resume error");
   });
 
-  broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
-  saveAgents();
+  await updateAndPersistAgent(agent);
 }
 
 async function stopAgent(agent: Agent): Promise<void> {
@@ -277,31 +321,36 @@ async function stopAgent(agent: Agent): Promise<void> {
     await agent.session.abort();
   }
   agent.status = "stopped";
-  agent.updatedAt = nowTs();
-  broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
-  saveAgents();
+  await updateAndPersistAgent(agent);
 }
 
 async function instructAgent(agent: Agent, instruction: string): Promise<void> {
-  if (
-    agent.session &&
-    (agent.status === "running" || agent.status === "waiting")
-  ) {
-    agent.status = "running";
-    agent.instruction = instruction;
-    agent.session.prompt(instruction).catch((err) => {
-      console.error(`Agent ${agent.id} instruction error:`, err);
-      agent.status = "error";
-      broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
-      saveAgents();
-    });
-  } else {
-    agent.instruction = instruction;
-    await startAgent(agent);
+  const action = determineAgentAction(!!agent.session, agent.status);
+
+  switch (action) {
+    case "continue_active":
+      // Active session - send prompt directly
+      agent.status = "running";
+      agent.instruction = instruction;
+      agent.session!.prompt(instruction).catch((err) => {
+        handleAgentError(agent, err, "instruction error");
+      });
+      break;
+
+    case "resume_session":
+      // Stopped agent - resume with session history
+      agent.instruction = instruction;
+      await resumeAgent(agent, instruction);
+      return; // resumeAgent handles broadcast/save
+
+    case "start_fresh":
+      // Pending or error - start fresh
+      agent.instruction = instruction;
+      await startAgent(agent);
+      return; // startAgent handles broadcast/save
   }
-  agent.updatedAt = nowTs();
-  broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
-  saveAgents();
+
+  await updateAndPersistAgent(agent);
 }
 
 async function setAgentModel(
@@ -324,9 +373,7 @@ async function setAgentModel(
     await agent.session.setModel(model);
   }
 
-  agent.updatedAt = nowTs();
-  broadcast({ type: "agent_updated", agent: serializeAgent(agent) });
-  saveAgents();
+  await updateAndPersistAgent(agent);
 }
 
 async function deleteAgent(agent: Agent): Promise<void> {
@@ -347,7 +394,7 @@ async function deleteAgent(agent: Agent): Promise<void> {
 
   agents.delete(agent.id);
   broadcast({ type: "agent_deleted", agentId: agent.id });
-  saveAgents();
+  await deleteAgentSession(agent.id);
 }
 
 async function mergeAgent(
@@ -410,7 +457,7 @@ async function handleWsCommand(
 
         agents.set(agentId, agent);
         broadcast({ type: "agent_created", agent: serializeAgent(agent) });
-        saveAgents();
+        await saveAgent(agent);
         sendResponse(ws, id, true, serializeAgent(agent));
         break;
       }

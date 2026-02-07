@@ -29,6 +29,10 @@ import {
   getStaleAgents,
   getAgentIds,
   buildWorkspacePath,
+  buildSessionsDir,
+  buildAgentSessionDir,
+  buildAgentMetadataPath,
+  determineAgentAction,
   generateNameFromInstruction,
   type Agent,
 } from "./core";
@@ -1039,6 +1043,255 @@ describe("Core", () => {
       it("then returns array with single id", () => {
         const result = getAgentIds(agents);
         expect(result).toEqual(["single-agent"]);
+      });
+    });
+  });
+
+  describe("buildSessionsDir", () => {
+    describe("given a base path", () => {
+      describe("when building sessions dir", () => {
+        it("then returns path under .pi/swarm/sessions", () => {
+          expect(buildSessionsDir("/home/user/project")).toBe(
+            "/home/user/project/.pi/swarm/sessions",
+          );
+        });
+      });
+    });
+
+    describe("given root path", () => {
+      describe("when building sessions dir", () => {
+        it("then handles root path (with double slash)", () => {
+          // Note: root path results in double slash, same as buildWorkspacePath
+          expect(buildSessionsDir("/")).toBe("//.pi/swarm/sessions");
+        });
+      });
+    });
+  });
+
+  describe("buildAgentSessionDir", () => {
+    describe("given base path and agent id", () => {
+      describe("when building agent session dir", () => {
+        it("then returns path with agent id as subdirectory", () => {
+          expect(buildAgentSessionDir("/home/user/project", "abc123")).toBe(
+            "/home/user/project/.pi/swarm/sessions/abc123",
+          );
+        });
+      });
+    });
+
+    describe("given various agent ids", () => {
+      const cases = [
+        { agentId: "a1b2c3d4", expected: "/proj/.pi/swarm/sessions/a1b2c3d4" },
+        {
+          agentId: "test-agent",
+          expected: "/proj/.pi/swarm/sessions/test-agent",
+        },
+        { agentId: "123", expected: "/proj/.pi/swarm/sessions/123" },
+      ];
+
+      cases.forEach(({ agentId, expected }) => {
+        describe(`when agent id is "${agentId}"`, () => {
+          it(`then returns ${expected}`, () => {
+            expect(buildAgentSessionDir("/proj", agentId)).toBe(expected);
+          });
+        });
+      });
+    });
+  });
+
+  describe("buildAgentMetadataPath", () => {
+    describe("given base path and agent id", () => {
+      describe("when building metadata path", () => {
+        it("then returns path to agent.json", () => {
+          expect(buildAgentMetadataPath("/home/user/project", "abc123")).toBe(
+            "/home/user/project/.pi/swarm/sessions/abc123/agent.json",
+          );
+        });
+      });
+    });
+
+    describe("given different base paths", () => {
+      const cases = [
+        {
+          basePath: "/",
+          agentId: "agent1",
+          // Note: root path results in double slash, same as buildWorkspacePath
+          expected: "//.pi/swarm/sessions/agent1/agent.json",
+        },
+        {
+          basePath: "/home/user",
+          agentId: "xyz",
+          expected: "/home/user/.pi/swarm/sessions/xyz/agent.json",
+        },
+      ];
+
+      cases.forEach(({ basePath, agentId, expected }) => {
+        describe(`when base path is "${basePath}"`, () => {
+          it(`then returns ${expected}`, () => {
+            expect(buildAgentMetadataPath(basePath, agentId)).toBe(expected);
+          });
+        });
+      });
+    });
+  });
+
+  describe("determineAgentAction", () => {
+    describe("given agent with active session", () => {
+      describe("when status is running", () => {
+        it("then returns continue_active", () => {
+          const result = determineAgentAction(true, "running");
+          expect(result).toBe("continue_active");
+        });
+      });
+
+      describe("when status is waiting", () => {
+        it("then returns continue_active", () => {
+          const result = determineAgentAction(true, "waiting");
+          expect(result).toBe("continue_active");
+        });
+      });
+
+      describe("when status is stopped", () => {
+        it("then returns resume_session (session lost after stop)", () => {
+          const result = determineAgentAction(true, "stopped");
+          expect(result).toBe("resume_session");
+        });
+      });
+    });
+
+    describe("given agent without active session", () => {
+      describe("when status is stopped", () => {
+        it("then returns resume_session", () => {
+          const result = determineAgentAction(false, "stopped");
+          expect(result).toBe("resume_session");
+        });
+      });
+
+      describe("when status is pending", () => {
+        it("then returns start_fresh", () => {
+          const result = determineAgentAction(false, "pending");
+          expect(result).toBe("start_fresh");
+        });
+      });
+
+      describe("when status is error", () => {
+        it("then returns start_fresh", () => {
+          const result = determineAgentAction(false, "error");
+          expect(result).toBe("start_fresh");
+        });
+      });
+
+      describe("when status is completed", () => {
+        it("then returns start_fresh", () => {
+          const result = determineAgentAction(false, "completed");
+          expect(result).toBe("start_fresh");
+        });
+      });
+
+      describe("when status is running (edge case - session lost)", () => {
+        it("then returns start_fresh", () => {
+          const result = determineAgentAction(false, "running");
+          expect(result).toBe("start_fresh");
+        });
+      });
+
+      describe("when status is waiting (edge case - session lost)", () => {
+        it("then returns start_fresh", () => {
+          const result = determineAgentAction(false, "waiting");
+          expect(result).toBe("start_fresh");
+        });
+      });
+    });
+
+    describe("agent action decision matrix", () => {
+      const testCases: Array<{
+        hasSession: boolean;
+        status: Agent["status"];
+        expected: "start_fresh" | "resume_session" | "continue_active";
+        scenario: string;
+      }> = [
+        // Active session scenarios
+        {
+          hasSession: true,
+          status: "running",
+          expected: "continue_active",
+          scenario: "active + running",
+        },
+        {
+          hasSession: true,
+          status: "waiting",
+          expected: "continue_active",
+          scenario: "active + waiting",
+        },
+        {
+          hasSession: true,
+          status: "stopped",
+          expected: "resume_session",
+          scenario: "active + stopped",
+        },
+        {
+          hasSession: true,
+          status: "pending",
+          expected: "start_fresh",
+          scenario: "active + pending",
+        },
+        {
+          hasSession: true,
+          status: "error",
+          expected: "start_fresh",
+          scenario: "active + error",
+        },
+        {
+          hasSession: true,
+          status: "completed",
+          expected: "start_fresh",
+          scenario: "active + completed",
+        },
+        // No session scenarios
+        {
+          hasSession: false,
+          status: "stopped",
+          expected: "resume_session",
+          scenario: "no session + stopped",
+        },
+        {
+          hasSession: false,
+          status: "pending",
+          expected: "start_fresh",
+          scenario: "no session + pending",
+        },
+        {
+          hasSession: false,
+          status: "error",
+          expected: "start_fresh",
+          scenario: "no session + error",
+        },
+        {
+          hasSession: false,
+          status: "completed",
+          expected: "start_fresh",
+          scenario: "no session + completed",
+        },
+        {
+          hasSession: false,
+          status: "running",
+          expected: "start_fresh",
+          scenario: "no session + running",
+        },
+        {
+          hasSession: false,
+          status: "waiting",
+          expected: "start_fresh",
+          scenario: "no session + waiting",
+        },
+      ];
+
+      testCases.forEach(({ hasSession, status, expected, scenario }) => {
+        describe(`given ${scenario}`, () => {
+          it(`then returns ${expected}`, () => {
+            expect(determineAgentAction(hasSession, status)).toBe(expected);
+          });
+        });
       });
     });
   });
