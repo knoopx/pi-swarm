@@ -30,8 +30,6 @@ import {
   TooltipTrigger,
 } from "./components/ui/tooltip";
 import { ConversationLog } from "./components/ConversationLog";
-import { FilesList } from "./components/FilesList";
-import { DiffViewer } from "./components/DiffViewer";
 import { ReviewMode, type ReviewComment } from "./components/ReviewMode";
 import { ModelSelector } from "./components/ModelSelector";
 import { extractTextFromOutput } from "./lib/parsing";
@@ -257,7 +255,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
   const handleTabChange = useCallback(
     async (tab: string) => {
       setActiveTab(tab);
-      if (tab === "diff" && selectedId && !diff) {
+      if (tab === "review" && selectedId && !diff) {
         await getDiff(selectedId);
       }
     },
@@ -486,18 +484,6 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                       <TabsTrigger value="output" className="gap-2">
                         Output
                       </TabsTrigger>
-                      <TabsTrigger value="files" className="gap-2">
-                        Files
-                        {(selectedAgent.modifiedFiles?.length || 0) > 0 && (
-                          <Badge
-                            variant="secondary"
-                            className="ml-1 h-5 px-1.5"
-                          >
-                            {selectedAgent.modifiedFiles?.length}
-                          </Badge>
-                        )}
-                      </TabsTrigger>
-                      <TabsTrigger value="diff">Diff</TabsTrigger>
                       <TabsTrigger value="review">Review</TabsTrigger>
                     </TabsList>
                   </div>
@@ -510,27 +496,6 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                       <ConversationLog
                         output={selectedAgent.output}
                         status={selectedAgent.status}
-                        className="flex-1 rounded-lg border bg-muted/30"
-                      />
-                    </TabsContent>
-
-                    <TabsContent
-                      value="files"
-                      className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
-                    >
-                      <FilesList
-                        files={selectedAgent.modifiedFiles || []}
-                        diffStat={selectedAgent.diffStat || ""}
-                        className="flex-1 rounded-lg border bg-muted/20"
-                      />
-                    </TabsContent>
-
-                    <TabsContent
-                      value="diff"
-                      className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
-                    >
-                      <DiffViewer
-                        diff={diff || ""}
                         className="flex-1 rounded-lg border bg-muted/30"
                       />
                     </TabsContent>

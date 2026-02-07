@@ -19,12 +19,21 @@ export interface TextEvent {
   role: "user" | "assistant";
 }
 
+export interface ThinkingEvent {
+  type: "thinking";
+  content: string;
+}
+
 export interface ProcessingEvent {
   type: "processing";
   content: string;
 }
 
-export type ParsedEvent = ToolExecutionEvent | TextEvent | ProcessingEvent;
+export type ParsedEvent =
+  | ToolExecutionEvent
+  | TextEvent
+  | ThinkingEvent
+  | ProcessingEvent;
 
 // Processing status messages
 const PROCESSING_MESSAGES = [
@@ -48,10 +57,23 @@ export function parseOutput(output: string): ParsedEvent[] {
   // Track tool executions by ID for merging start/end events
   const toolMap = new Map<string, ToolExecutionEvent>();
 
-  // Track accumulated text
+  // Track accumulated text and thinking
   let currentText = "";
+  let currentThinking = "";
+
+  const flushThinking = () => {
+    if (currentThinking.trim()) {
+      events.push({
+        type: "thinking",
+        content: currentThinking.trim(),
+      });
+      currentThinking = "";
+    }
+  };
 
   const flushText = () => {
+    // Flush any thinking before text
+    flushThinking();
     if (currentText.trim()) {
       events.push({
         type: "text",
@@ -108,11 +130,34 @@ export function parseOutput(output: string): ParsedEvent[] {
           if (msgEvent?.type === "text_delta" && msgEvent.delta) {
             currentText += msgEvent.delta;
           }
+          // Handle reasoning/thinking content from extended thinking models
+          if (msgEvent?.type === "reasoning" && msgEvent.text) {
+            currentThinking += msgEvent.text;
+          }
+          // Handle thinking delta format (streaming)
+          if (msgEvent?.type === "thinking_delta" && msgEvent.delta) {
+            currentThinking += msgEvent.delta;
+          }
+          break;
+        }
+
+        case "thinking_start":
+        case "reasoning_start": {
+          // Start of a thinking block
+          flushText();
+          break;
+        }
+
+        case "thinking_end":
+        case "reasoning_end": {
+          // End of a thinking block - flush accumulated thinking
+          flushThinking();
           break;
         }
 
         case "message_end":
         case "agent_end":
+          flushThinking();
           flushText();
           break;
 
@@ -127,7 +172,8 @@ export function parseOutput(output: string): ParsedEvent[] {
     }
   }
 
-  // Flush any remaining text
+  // Flush any remaining thinking and text
+  flushThinking();
   flushText();
 
   // If nothing parsed, show raw output

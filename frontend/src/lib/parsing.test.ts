@@ -6,6 +6,7 @@ import {
   isProcessingMessage,
   type ToolExecutionEvent,
   type TextEvent,
+  type ThinkingEvent,
 } from "./parsing";
 
 describe("parsing", () => {
@@ -426,6 +427,185 @@ describe("parsing", () => {
 
       it("then ignores non-text_delta events", () => {
         expect(extractTextFromOutput(output)).toBe("");
+      });
+    });
+  });
+
+  describe("thinking events", () => {
+    describe("given message_update with reasoning content", () => {
+      const output = [
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: {
+            type: "reasoning",
+            text: "Let me think about this...",
+          },
+        }),
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: {
+            type: "reasoning",
+            text: " I need to analyze the problem.",
+          },
+        }),
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: {
+            type: "text_delta",
+            delta: "Here is my answer.",
+          },
+        }),
+        JSON.stringify({ type: "message_end" }),
+      ].join("\n");
+
+      it("then creates thinking event before text event", () => {
+        const result = parseOutput(output);
+        expect(result).toHaveLength(2);
+
+        const thinking = result[0] as ThinkingEvent;
+        expect(thinking.type).toBe("thinking");
+        expect(thinking.content).toBe(
+          "Let me think about this... I need to analyze the problem.",
+        );
+
+        const text = result[1] as TextEvent;
+        expect(text.type).toBe("text");
+        expect(text.content).toBe("Here is my answer.");
+      });
+    });
+
+    describe("given message_update with thinking_delta content", () => {
+      const output = [
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: { type: "thinking_delta", delta: "First, " },
+        }),
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: {
+            type: "thinking_delta",
+            delta: "consider the options.",
+          },
+        }),
+        JSON.stringify({ type: "thinking_end" }),
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: {
+            type: "text_delta",
+            delta: "The best option is...",
+          },
+        }),
+        JSON.stringify({ type: "message_end" }),
+      ].join("\n");
+
+      it("then accumulates thinking deltas into thinking event", () => {
+        const result = parseOutput(output);
+        expect(result).toHaveLength(2);
+
+        const thinking = result[0] as ThinkingEvent;
+        expect(thinking.type).toBe("thinking");
+        expect(thinking.content).toBe("First, consider the options.");
+
+        const text = result[1] as TextEvent;
+        expect(text.type).toBe("text");
+        expect(text.content).toBe("The best option is...");
+      });
+    });
+
+    describe("given thinking interleaved with tools", () => {
+      const output = [
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: {
+            type: "reasoning",
+            text: "I should read the file.",
+          },
+        }),
+        JSON.stringify({
+          type: "tool_execution_start",
+          toolCallId: "call-1",
+          toolName: "Read",
+          args: { path: "/test.txt" },
+        }),
+        JSON.stringify({
+          type: "tool_execution_end",
+          toolCallId: "call-1",
+          result: "file contents",
+          isError: false,
+        }),
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: {
+            type: "text_delta",
+            delta: "The file contains...",
+          },
+        }),
+        JSON.stringify({ type: "message_end" }),
+      ].join("\n");
+
+      it("then flushes thinking before tool and preserves order", () => {
+        const result = parseOutput(output);
+        expect(result).toHaveLength(3);
+
+        expect(result[0].type).toBe("thinking");
+        expect((result[0] as ThinkingEvent).content).toBe(
+          "I should read the file.",
+        );
+
+        expect(result[1].type).toBe("tool");
+        expect((result[1] as ToolExecutionEvent).toolName).toBe("Read");
+
+        expect(result[2].type).toBe("text");
+        expect((result[2] as TextEvent).content).toBe("The file contains...");
+      });
+    });
+
+    describe("given only thinking content with no text", () => {
+      const output = [
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: {
+            type: "reasoning",
+            text: "Analyzing the situation...",
+          },
+        }),
+        JSON.stringify({ type: "agent_end" }),
+      ].join("\n");
+
+      it("then creates thinking event", () => {
+        const result = parseOutput(output);
+        expect(result).toHaveLength(1);
+
+        const thinking = result[0] as ThinkingEvent;
+        expect(thinking.type).toBe("thinking");
+        expect(thinking.content).toBe("Analyzing the situation...");
+      });
+    });
+
+    describe("given reasoning_start and reasoning_end events", () => {
+      const output = [
+        JSON.stringify({ type: "reasoning_start" }),
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: { type: "reasoning", text: "Deep thought..." },
+        }),
+        JSON.stringify({ type: "reasoning_end" }),
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: { type: "text_delta", delta: "Conclusion." },
+        }),
+        JSON.stringify({ type: "message_end" }),
+      ].join("\n");
+
+      it("then properly separates thinking from text", () => {
+        const result = parseOutput(output);
+        expect(result).toHaveLength(2);
+
+        expect(result[0].type).toBe("thinking");
+        expect((result[0] as ThinkingEvent).content).toBe("Deep thought...");
+
+        expect(result[1].type).toBe("text");
+        expect((result[1] as TextEvent).content).toBe("Conclusion.");
       });
     });
   });

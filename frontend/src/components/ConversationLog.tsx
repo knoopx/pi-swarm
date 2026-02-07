@@ -17,6 +17,7 @@ import {
   ToolInput,
   ToolOutput,
 } from "./ai-elements/tool";
+import { Thinking, ThinkingContent } from "./ai-elements/thinking";
 import type { ToolUIPart } from "ai";
 import { parseOutput, extractToolResult } from "../lib/parsing";
 
@@ -71,6 +72,14 @@ export function ConversationLog({
                   )}
                 </ToolContent>
               </Tool>
+            );
+          }
+
+          if (event.type === "thinking") {
+            return (
+              <Thinking key={i} defaultOpen={false}>
+                <ThinkingContent>{event.content}</ThinkingContent>
+              </Thinking>
             );
           }
 
