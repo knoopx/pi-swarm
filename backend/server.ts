@@ -24,6 +24,21 @@ interface Agent extends CoreAgent {
   session?: AgentSession;
 }
 
+// WebSocket message types
+interface WsRequest {
+  id: string; // Request ID for response correlation
+  type: string;
+  [key: string]: unknown;
+}
+
+interface WsResponse {
+  id: string; // Correlation ID
+  type: "response";
+  success: boolean;
+  data?: unknown;
+  error?: string;
+}
+
 // State
 const agents = new Map<string, Agent>();
 const wsClients = new Set<{ send: (data: string) => void }>();
@@ -81,6 +96,17 @@ function broadcast(event: { type: string; [key: string]: unknown }) {
       wsClients.delete(client);
     }
   }
+}
+
+function sendResponse(
+  ws: { send: (data: string) => void },
+  id: string,
+  success: boolean,
+  data?: unknown,
+  error?: string,
+) {
+  const response: WsResponse = { id, type: "response", success, data, error };
+  ws.send(JSON.stringify(response));
 }
 
 async function createWorkspace(basePath: string, id: string): Promise<string> {
@@ -305,6 +331,160 @@ async function mergeAgent(
   }
 }
 
+// WebSocket command handler
+async function handleWsCommand(
+  ws: { send: (data: string) => void },
+  message: WsRequest,
+): Promise<void> {
+  const { id, type } = message;
+
+  try {
+    switch (type) {
+      case "create_agent": {
+        const agentId = generateId();
+        const workspace = await createWorkspace(BASE_PATH, agentId);
+
+        let { provider, model: modelId } = message as {
+          provider?: string;
+          model?: string;
+        };
+        if (!provider || !modelId) {
+          const defaultModel = getDefaultModel();
+          provider = provider || defaultModel.provider;
+          modelId = modelId || defaultModel.modelId;
+        }
+
+        const agent: Agent = {
+          id: agentId,
+          name: (message.name as string) || "unnamed",
+          status: "pending",
+          instruction: (message.instruction as string) || "",
+          workspace,
+          basePath: BASE_PATH,
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
+          output: "",
+          modifiedFiles: [],
+          diffStat: "",
+          provider,
+          model: modelId,
+        };
+
+        agents.set(agentId, agent);
+        broadcast({ type: "agent_created", agent: serializeAgent(agent) });
+        saveAgents();
+        sendResponse(ws, id, true, serializeAgent(agent));
+        break;
+      }
+
+      case "start_agent": {
+        const agent = agents.get(message.agentId as string);
+        if (!agent) {
+          sendResponse(ws, id, false, undefined, "Agent not found");
+          return;
+        }
+        await startAgent(agent);
+        sendResponse(ws, id, true, serializeAgent(agent));
+        break;
+      }
+
+      case "stop_agent": {
+        const agent = agents.get(message.agentId as string);
+        if (!agent) {
+          sendResponse(ws, id, false, undefined, "Agent not found");
+          return;
+        }
+        await stopAgent(agent);
+        sendResponse(ws, id, true, serializeAgent(agent));
+        break;
+      }
+
+      case "instruct_agent": {
+        const agent = agents.get(message.agentId as string);
+        if (!agent) {
+          sendResponse(ws, id, false, undefined, "Agent not found");
+          return;
+        }
+        await instructAgent(agent, message.instruction as string);
+        sendResponse(ws, id, true, serializeAgent(agent));
+        break;
+      }
+
+      case "set_model": {
+        const agent = agents.get(message.agentId as string);
+        if (!agent) {
+          sendResponse(ws, id, false, undefined, "Agent not found");
+          return;
+        }
+        await setAgentModel(
+          agent,
+          message.provider as string,
+          message.model as string,
+        );
+        sendResponse(ws, id, true, serializeAgent(agent));
+        break;
+      }
+
+      case "get_diff": {
+        const agent = agents.get(message.agentId as string);
+        if (!agent) {
+          sendResponse(ws, id, false, undefined, "Agent not found");
+          return;
+        }
+        const diff = await getDiff(agent.workspace);
+        sendResponse(ws, id, true, { diff });
+        break;
+      }
+
+      case "merge_agent": {
+        const agent = agents.get(message.agentId as string);
+        if (!agent) {
+          sendResponse(ws, id, false, undefined, "Agent not found");
+          return;
+        }
+        const result = await mergeAgent(agent);
+        if (result.success) {
+          sendResponse(ws, id, true, { message: "Changes merged" });
+        } else {
+          sendResponse(ws, id, false, undefined, result.error);
+        }
+        break;
+      }
+
+      case "delete_agent": {
+        const agent = agents.get(message.agentId as string);
+        if (!agent) {
+          sendResponse(ws, id, false, undefined, "Agent not found");
+          return;
+        }
+        await deleteAgent(agent);
+        sendResponse(ws, id, true);
+        break;
+      }
+
+      case "fetch_agent": {
+        const agent = agents.get(message.agentId as string);
+        if (!agent) {
+          sendResponse(ws, id, false, undefined, "Agent not found");
+          return;
+        }
+        const agentData = {
+          ...serializeAgent(agent),
+          modifiedFiles: await getModifiedFiles(agent.workspace),
+          diffStat: await getDiffStat(agent.workspace),
+        };
+        sendResponse(ws, id, true, agentData);
+        break;
+      }
+
+      default:
+        sendResponse(ws, id, false, undefined, `Unknown command: ${type}`);
+    }
+  } catch (err) {
+    sendResponse(ws, id, false, undefined, String(err));
+  }
+}
+
 // Helper for error responses
 function errorResponse(status: number, body: object) {
   return new Response(JSON.stringify(body), {
@@ -320,20 +500,20 @@ async function proxyToVite(path: string): Promise<Response> {
 }
 
 // Elysia App
-let app = new Elysia();
+const baseApp = new Elysia();
 
 // Only use static plugin in production (when dist exists)
-if (!IS_DEV) {
-  app = app.use(
-    staticPlugin({
-      assets: FRONTEND_DIST,
-      prefix: "/",
-    }),
-  );
-}
+const app = IS_DEV
+  ? baseApp
+  : baseApp.use(
+      staticPlugin({
+        assets: FRONTEND_DIST,
+        prefix: "/",
+      }),
+    );
 
-app = app
-  // WebSocket for real-time updates
+app
+  // WebSocket for real-time updates and commands
   .ws("/ws", {
     open(ws) {
       wsClients.add(ws);
@@ -350,146 +530,16 @@ app = app
       wsClients.delete(ws);
     },
     message(ws, message) {
-      console.log("WS message:", message);
-    },
-  })
-  // REST API
-  .get("/api/models", () => ({ models: getAvailableModels() }))
-  .get("/api/agents", async () => {
-    const agentList = await Promise.all(
-      Array.from(agents.values()).map(async (a) => ({
-        ...serializeAgent(a),
-        modifiedFiles: await getModifiedFiles(a.workspace),
-        diffStat: await getDiffStat(a.workspace),
-      })),
-    );
-    return { agents: agentList };
-  })
-  .post(
-    "/api/agents",
-    async ({ body }) => {
-      const id = generateId();
-      const workspace = await createWorkspace(BASE_PATH, id);
-
-      let { provider, model: modelId } = body;
-      if (!provider || !modelId) {
-        const defaultModel = getDefaultModel();
-        provider = provider || defaultModel.provider;
-        modelId = modelId || defaultModel.modelId;
-      }
-
-      const agent: Agent = {
-        id,
-        name: body.name || "unnamed",
-        status: "pending",
-        instruction: body.instruction || "",
-        workspace,
-        basePath: BASE_PATH,
-        createdAt: nowTs(),
-        updatedAt: nowTs(),
-        output: "",
-        modifiedFiles: [],
-        diffStat: "",
-        provider,
-        model: modelId,
-      };
-
-      agents.set(id, agent);
-      broadcast({ type: "agent_created", agent: serializeAgent(agent) });
-      saveAgents();
-      return serializeAgent(agent);
-    },
-    {
-      body: t.Object({
-        name: t.Optional(t.String()),
-        instruction: t.Optional(t.String()),
-        provider: t.Optional(t.String()),
-        model: t.Optional(t.String()),
-      }),
-    },
-  )
-  .get("/api/agents/:id", async ({ params }) => {
-    const agent = agents.get(params.id);
-    if (!agent) return errorResponse(404, { error: "Agent not found" });
-
-    return {
-      ...serializeAgent(agent),
-      modifiedFiles: await getModifiedFiles(agent.workspace),
-      diffStat: await getDiffStat(agent.workspace),
-    };
-  })
-  .post("/api/agents/:id/start", async ({ params }) => {
-    const agent = agents.get(params.id);
-    if (!agent) return errorResponse(404, { error: "Agent not found" });
-
-    await startAgent(agent);
-    return serializeAgent(agent);
-  })
-  .post("/api/agents/:id/stop", async ({ params }) => {
-    const agent = agents.get(params.id);
-    if (!agent) return errorResponse(404, { error: "Agent not found" });
-
-    await stopAgent(agent);
-    return serializeAgent(agent);
-  })
-  .post(
-    "/api/agents/:id/instruct",
-    async ({ params, body }) => {
-      const agent = agents.get(params.id);
-      if (!agent) return errorResponse(404, { error: "Agent not found" });
-
-      await instructAgent(agent, body.instruction);
-      return { success: true, agent: serializeAgent(agent) };
-    },
-    {
-      body: t.Object({
-        instruction: t.String(),
-      }),
-    },
-  )
-  .post(
-    "/api/agents/:id/model",
-    async ({ params, body }) => {
-      const agent = agents.get(params.id);
-      if (!agent) return errorResponse(404, { error: "Agent not found" });
-
       try {
-        await setAgentModel(agent, body.provider, body.model);
-        return { success: true, agent: serializeAgent(agent) };
-      } catch (e) {
-        return errorResponse(400, { error: String(e) });
+        const data =
+          typeof message === "string" ? JSON.parse(message) : message;
+        if (data.id && data.type) {
+          handleWsCommand(ws, data as WsRequest);
+        }
+      } catch (err) {
+        console.error("Failed to handle WS message:", err);
       }
     },
-    {
-      body: t.Object({
-        provider: t.String(),
-        model: t.String(),
-      }),
-    },
-  )
-  .get("/api/agents/:id/diff", async ({ params }) => {
-    const agent = agents.get(params.id);
-    if (!agent) return errorResponse(404, { error: "Agent not found" });
-
-    const diff = await getDiff(agent.workspace);
-    return { diff };
-  })
-  .post("/api/agents/:id/merge", async ({ params }) => {
-    const agent = agents.get(params.id);
-    if (!agent) return errorResponse(404, { error: "Agent not found" });
-
-    const result = await mergeAgent(agent);
-    if (result.success) {
-      return { success: true, message: "Changes merged" };
-    }
-    return errorResponse(500, { error: "Merge failed", details: result.error });
-  })
-  .delete("/api/agents/:id", async ({ params }) => {
-    const agent = agents.get(params.id);
-    if (!agent) return errorResponse(404, { error: "Agent not found" });
-
-    await deleteAgent(agent);
-    return { success: true };
   })
   // SPA fallback - proxy to Vite in dev mode, serve from dist in production
   .get("*", ({ request }) => {

@@ -2,7 +2,6 @@ import { create } from "zustand";
 import type { Agent, ModelInfo } from "./types";
 import { parseOutputToState, processEvent } from "./lib/conversation-state";
 
-const API_BASE = "/api";
 const WS_URL = `ws://${window.location.host}/ws`;
 
 interface WsMessage {
@@ -12,6 +11,19 @@ interface WsMessage {
   agent?: Agent;
   agentId?: string;
   event?: unknown;
+}
+
+// Pending request tracking
+type PendingRequest = {
+  resolve: (data: unknown) => void;
+  reject: (error: Error) => void;
+};
+
+const pendingRequests = new Map<string, PendingRequest>();
+let requestId = 0;
+
+function generateRequestId(): string {
+  return `req-${++requestId}-${Date.now()}`;
 }
 
 interface AgentStore {
@@ -26,7 +38,7 @@ interface AgentStore {
 
   // WebSocket
   ws: WebSocket | null;
-  reconnectTimeout: NodeJS.Timeout | null;
+  reconnectTimeout: ReturnType<typeof setTimeout> | null;
 
   // Actions
   connect: () => void;
@@ -34,7 +46,13 @@ interface AgentStore {
   setSelectedId: (id: string | null) => void;
   setDiff: (diff: string | null) => void;
 
-  // API Actions
+  // WebSocket Commands
+  sendCommand: <T = unknown>(
+    type: string,
+    payload?: Record<string, unknown>,
+  ) => Promise<T>;
+
+  // Agent Actions
   createAgent: (
     name: string,
     instruction: string,
@@ -80,6 +98,11 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
     ws.onclose = () => {
       set({ connected: false, ws: null });
+      // Reject all pending requests
+      for (const [id, { reject }] of pendingRequests) {
+        reject(new Error("WebSocket disconnected"));
+        pendingRequests.delete(id);
+      }
       // Reconnect after 2 seconds
       const timeout = setTimeout(() => get().connect(), 2000);
       set({ reconnectTimeout: timeout });
@@ -91,32 +114,48 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
     ws.onmessage = (event) => {
       try {
-        const data: WsMessage = JSON.parse(event.data);
+        const data = JSON.parse(event.data);
 
-        switch (data.type) {
+        // Handle response to a request
+        if (data.type === "response" && data.id) {
+          const pending = pendingRequests.get(data.id);
+          if (pending) {
+            pendingRequests.delete(data.id);
+            if (data.success) {
+              pending.resolve(data.data);
+            } else {
+              pending.reject(new Error(data.error || "Request failed"));
+            }
+          }
+          return;
+        }
+
+        // Handle broadcast events
+        const wsData = data as WsMessage;
+        switch (wsData.type) {
           case "init":
             // Hydrate agents with conversation state from raw output
-            const hydratedAgents = (data.agents || []).map((agent) => ({
+            const hydratedAgents = (wsData.agents || []).map((agent) => ({
               ...agent,
               conversation: parseOutputToState(agent.output),
             }));
             set({
               agents: hydratedAgents,
-              models: data.models || [],
+              models: wsData.models || [],
               loading: false,
             });
             break;
 
           case "agent_created":
-            if (data.agent) {
+            if (wsData.agent) {
               set((state) => {
                 // Prevent duplicates - only add if agent doesn't already exist
-                if (state.agents.some((a) => a.id === data.agent!.id)) {
+                if (state.agents.some((a) => a.id === wsData.agent!.id)) {
                   return state;
                 }
                 const newAgent = {
-                  ...data.agent!,
-                  conversation: parseOutputToState(data.agent!.output),
+                  ...wsData.agent!,
+                  conversation: parseOutputToState(wsData.agent!.output),
                 };
                 return { agents: [...state.agents, newAgent] };
               });
@@ -124,17 +163,17 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
             break;
 
           case "agent_updated":
-            if (data.agent) {
+            if (wsData.agent) {
               set((state) => ({
                 agents: state.agents.map((a) =>
-                  a.id === data.agent!.id
+                  a.id === wsData.agent!.id
                     ? {
                         ...a,
-                        ...data.agent,
+                        ...wsData.agent,
                         // Re-parse if output changed significantly (e.g., agent restart)
                         conversation:
-                          data.agent!.output !== a.output
-                            ? parseOutputToState(data.agent!.output)
+                          wsData.agent!.output !== a.output
+                            ? parseOutputToState(wsData.agent!.output)
                             : a.conversation,
                       }
                     : a,
@@ -144,26 +183,29 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
             break;
 
           case "agent_deleted":
-            if (data.agentId) {
+            if (wsData.agentId) {
               set((state) => ({
-                agents: state.agents.filter((a) => a.id !== data.agentId),
+                agents: state.agents.filter((a) => a.id !== wsData.agentId),
                 selectedId:
-                  state.selectedId === data.agentId ? null : state.selectedId,
+                  state.selectedId === wsData.agentId ? null : state.selectedId,
               }));
             }
             break;
 
           case "agent_event":
-            if (data.agentId && data.event) {
+            if (wsData.agentId && wsData.event) {
               set((state) => ({
                 agents: state.agents.map((a) =>
-                  a.id === data.agentId
+                  a.id === wsData.agentId
                     ? {
                         ...a,
                         // Keep raw output for persistence/debugging
-                        output: a.output + JSON.stringify(data.event) + "\n",
+                        output: a.output + JSON.stringify(wsData.event) + "\n",
                         // Process event incrementally into structured state
-                        conversation: processEvent(a.conversation, data.event),
+                        conversation: processEvent(
+                          a.conversation,
+                          wsData.event,
+                        ),
                       }
                     : a,
                 ),
@@ -193,15 +235,48 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   setSelectedId: (id) => set({ selectedId: id, diff: null }),
   setDiff: (diff) => set({ diff }),
 
+  // Generic WebSocket command sender with request-response
+  sendCommand: <T = unknown>(
+    type: string,
+    payload: Record<string, unknown> = {},
+  ): Promise<T> => {
+    return new Promise((resolve, reject) => {
+      const { ws, connected } = get();
+
+      if (!ws || !connected) {
+        reject(new Error("WebSocket not connected"));
+        return;
+      }
+
+      const id = generateRequestId();
+      const message = { id, type, ...payload };
+
+      // Store pending request
+      pendingRequests.set(id, {
+        resolve: resolve as (data: unknown) => void,
+        reject,
+      });
+
+      // Set timeout for request
+      setTimeout(() => {
+        if (pendingRequests.has(id)) {
+          pendingRequests.delete(id);
+          reject(new Error("Request timeout"));
+        }
+      }, 30000);
+
+      ws.send(JSON.stringify(message));
+    });
+  },
+
   createAgent: async (name, instruction, provider, model) => {
     try {
-      const res = await fetch(`${API_BASE}/agents`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, instruction, provider, model }),
+      const data = await get().sendCommand<Agent>("create_agent", {
+        name,
+        instruction,
+        provider,
+        model,
       });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
       return data;
     } catch (err) {
       set({
@@ -213,11 +288,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   startAgent: async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/agents/${id}/start`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      await get().sendCommand("start_agent", { agentId: id });
       return true;
     } catch (err) {
       console.error("Failed to start agent:", err);
@@ -227,11 +298,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   stopAgent: async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/agents/${id}/stop`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      await get().sendCommand("stop_agent", { agentId: id });
       return true;
     } catch (err) {
       console.error("Failed to stop agent:", err);
@@ -241,13 +308,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   instructAgent: async (id, instruction) => {
     try {
-      const res = await fetch(`${API_BASE}/agents/${id}/instruct`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instruction }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      await get().sendCommand("instruct_agent", { agentId: id, instruction });
       return true;
     } catch (err) {
       console.error("Failed to instruct agent:", err);
@@ -257,13 +318,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   setAgentModel: async (id, provider, model) => {
     try {
-      const res = await fetch(`${API_BASE}/agents/${id}/model`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, model }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      await get().sendCommand("set_model", { agentId: id, provider, model });
       return true;
     } catch (err) {
       console.error("Failed to set agent model:", err);
@@ -273,9 +328,10 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   getDiff: async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/agents/${id}/diff`);
-      const data = await res.json();
-      const diff = data.diff || null;
+      const data = await get().sendCommand<{ diff: string }>("get_diff", {
+        agentId: id,
+      });
+      const diff = data?.diff || null;
       set({ diff });
       return diff;
     } catch (err) {
@@ -286,11 +342,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   mergeAgent: async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/agents/${id}/merge`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      await get().sendCommand("merge_agent", { agentId: id });
       return true;
     } catch (err) {
       console.error("Failed to merge agent:", err);
@@ -300,9 +352,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   deleteAgent: async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/agents/${id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      await get().sendCommand("delete_agent", { agentId: id });
       return true;
     } catch (err) {
       console.error("Failed to delete agent:", err);
@@ -312,19 +362,22 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   fetchAgent: async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/agents/${id}`);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      const hydratedAgent = {
-        ...data,
-        conversation: parseOutputToState(data.output),
-      };
-      set((state) => ({
-        agents: state.agents.map((a) =>
-          a.id === id ? { ...a, ...hydratedAgent } : a,
-        ),
-      }));
-      return hydratedAgent;
+      const data = await get().sendCommand<Agent>("fetch_agent", {
+        agentId: id,
+      });
+      if (data) {
+        const hydratedAgent = {
+          ...data,
+          conversation: parseOutputToState(data.output),
+        };
+        set((state) => ({
+          agents: state.agents.map((a) =>
+            a.id === id ? { ...a, ...hydratedAgent } : a,
+          ),
+        }));
+        return hydratedAgent;
+      }
+      return null;
     } catch (err) {
       console.error("Failed to fetch agent:", err);
       return null;
