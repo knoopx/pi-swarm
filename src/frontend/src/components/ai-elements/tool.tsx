@@ -318,8 +318,13 @@ export const ToolOutput = ({
             : "bg-muted/50 text-foreground",
         )}
       >
-        {errorText && <div className="p-3 font-mono">{errorText}</div>}
-        {renderedOutput}
+        {errorText ? (
+          <div className="p-3 font-mono whitespace-pre-wrap break-words">
+            {errorText}
+          </div>
+        ) : (
+          renderedOutput
+        )}
       </div>
     </div>
   );
