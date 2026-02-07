@@ -351,27 +351,28 @@ Output ONLY the improved task specification, ready to be used as instructions fo
             </div>
             <div>
               <h1 className="font-semibold text-sm">Pi Swarm</h1>
-              <p className="text-xs text-muted-foreground">
-                {cwd && <span className="font-mono">{cwd}</span>}
-                {cwd && " · "}
-                {agents.length} agent{agents.length !== 1 ? "s" : ""}
-                {runningCount > 0 && (
-                  <span className="text-yellow-500 ml-1">
-                    · {runningCount} running
-                  </span>
-                )}
-              </p>
+              {cwd && (
+                <p className="text-xs text-muted-foreground font-mono">{cwd}</p>
+              )}
             </div>
           </div>
 
           <div className="ml-auto flex items-center gap-3">
+            <div className="text-xs text-muted-foreground">
+              {agents.length} agent{agents.length !== 1 ? "s" : ""}
+              {runningCount > 0 && (
+                <span className="text-base09 ml-1">
+                  · {runningCount} running
+                </span>
+              )}
+            </div>
             <Tooltip>
               <TooltipTrigger asChild>
                 <div
                   className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs ${
                     connected
-                      ? "bg-green-500/10 text-green-500"
-                      : "bg-red-500/10 text-red-500"
+                      ? "bg-success/30 text-success border border-success/50"
+                      : "bg-destructive/30 text-destructive border border-destructive/50"
                   }`}
                 >
                   {connected ? (

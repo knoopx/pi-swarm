@@ -108,9 +108,9 @@ function parseDiff(diff: string): DiffFile[] {
 }
 
 const typeColors = {
-  issue: "bg-red-500/20 text-red-400 border-red-500/30",
-  suggestion: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  question: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  issue: "bg-base08/20 text-base08 border-base08/30",
+  suggestion: "bg-base0C/20 text-base0C border-base0C/30",
+  question: "bg-base09/20 text-base09 border-base09/30",
 };
 
 export function ReviewMode({
@@ -235,7 +235,7 @@ export function ReviewMode({
                   <div className="text-xs font-mono">
                     {file.hunks.map((hunk, hi) => (
                       <div key={hi}>
-                        <div className="px-3 py-1 bg-blue-500/10 text-blue-400 text-xs">
+                        <div className="px-3 py-1 bg-base0C/10 text-base0C text-xs">
                           {hunk.header}
                         </div>
                         {hunk.lines.map((line, li) => {
@@ -252,9 +252,9 @@ export function ReviewMode({
                               <div
                                 className={`group flex items-stretch hover:bg-muted/30 ${
                                   line.type === "add"
-                                    ? "bg-green-500/10"
+                                    ? "bg-base0B/10"
                                     : line.type === "remove"
-                                      ? "bg-red-500/10"
+                                      ? "bg-base08/10"
                                       : ""
                                 } ${isActive ? "ring-1 ring-primary" : ""}`}
                               >
@@ -284,9 +284,9 @@ export function ReviewMode({
                                   <span
                                     className={
                                       line.type === "add"
-                                        ? "text-green-400"
+                                        ? "text-base0B"
                                         : line.type === "remove"
-                                          ? "text-red-400"
+                                          ? "text-base08"
                                           : ""
                                     }
                                   >

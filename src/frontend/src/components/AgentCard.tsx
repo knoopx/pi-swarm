@@ -217,7 +217,7 @@ export function AgentCard({
               <ConversationLog
                 conversation={agent.conversation}
                 status={agent.status}
-                className="h-[400px] rounded-md border bg-black/50"
+                className="h-[400px] rounded-md border bg-base00/50"
               />
             </TabsContent>
 
@@ -237,7 +237,7 @@ export function AgentCard({
               ) : (
                 <DiffViewer
                   diff={diff || ""}
-                  className="h-[400px] rounded-md border bg-black/50"
+                  className="h-[400px] rounded-md border bg-base00/50"
                 />
               )}
             </TabsContent>

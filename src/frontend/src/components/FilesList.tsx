@@ -69,13 +69,13 @@ function parseDiffStat(diffStat: string, files: string[]): FileChange[] {
 
 function getFileIcon(change: FileChange) {
   if (change.deletions > 0 && change.additions === 0) {
-    return <FileMinus className="h-4 w-4 text-red-400" />;
+    return <FileMinus className="h-4 w-4 text-base08" />;
   }
   if (change.additions > 0 && change.deletions === 0) {
-    return <FilePlus className="h-4 w-4 text-green-400" />;
+    return <FilePlus className="h-4 w-4 text-base0B" />;
   }
   if (change.additions > 0 || change.deletions > 0) {
-    return <FileEdit className="h-4 w-4 text-yellow-400" />;
+    return <FileEdit className="h-4 w-4 text-base09" />;
   }
   return <FileCode className="h-4 w-4 text-muted-foreground" />;
 }
@@ -102,10 +102,10 @@ function ChangeBar({
       </span>
       <div className="flex">
         {Array.from({ length: addBars }).map((_, i) => (
-          <div key={`add-${i}`} className="w-1.5 h-3 bg-green-500 mr-px" />
+          <div key={`add-${i}`} className="w-1.5 h-3 bg-base0B mr-px" />
         ))}
         {Array.from({ length: delBars }).map((_, i) => (
-          <div key={`del-${i}`} className="w-1.5 h-3 bg-red-500 mr-px" />
+          <div key={`del-${i}`} className="w-1.5 h-3 bg-base08 mr-px" />
         ))}
       </div>
     </div>
@@ -143,10 +143,10 @@ export function FilesList({ files, diffStat, className }: FilesListProps) {
           </div>
           <div className="flex items-center gap-3 text-xs">
             {totalAdditions > 0 && (
-              <span className="text-green-400">+{totalAdditions}</span>
+              <span className="text-base0B">+{totalAdditions}</span>
             )}
             {totalDeletions > 0 && (
-              <span className="text-red-400">-{totalDeletions}</span>
+              <span className="text-base08">-{totalDeletions}</span>
             )}
           </div>
         </div>
