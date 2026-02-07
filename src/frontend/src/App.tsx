@@ -110,6 +110,7 @@ function sortAgents(agents: Agent[]): Agent[] {
 
 export default function App() {
   const {
+    cwd,
     agents,
     models,
     loading,
@@ -351,6 +352,8 @@ Output ONLY the improved task specification, ready to be used as instructions fo
             <div>
               <h1 className="font-semibold text-sm">Pi Swarm</h1>
               <p className="text-xs text-muted-foreground">
+                {cwd && <span className="font-mono">{cwd}</span>}
+                {cwd && " · "}
                 {agents.length} agent{agents.length !== 1 ? "s" : ""}
                 {runningCount > 0 && (
                   <span className="text-yellow-500 ml-1">

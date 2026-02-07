@@ -6,6 +6,7 @@ const WS_URL = `ws://${window.location.host}/ws`;
 
 interface WsMessage {
   type: string;
+  cwd?: string;
   agents?: Agent[];
   models?: ModelInfo[];
   agent?: Agent;
@@ -28,6 +29,7 @@ function generateRequestId(): string {
 
 interface AgentStore {
   // State
+  cwd: string | null;
   agents: Agent[];
   models: ModelInfo[];
   loading: boolean;
@@ -76,6 +78,7 @@ interface AgentStore {
 
 export const useAgentStore = create<AgentStore>((set, get) => ({
   // Initial state
+  cwd: null,
   agents: [],
   models: [],
   loading: true,
@@ -134,18 +137,20 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         // Handle broadcast events
         const wsData = data as WsMessage;
         switch (wsData.type) {
-          case "init":
+          case "init": {
             // Hydrate agents with conversation state from raw output
             const hydratedAgents = (wsData.agents || []).map((agent) => ({
               ...agent,
               conversation: parseOutputToState(agent.output),
             }));
             set({
+              cwd: wsData.cwd || null,
               agents: hydratedAgents,
               models: wsData.models || [],
               loading: false,
             });
             break;
+          }
 
           case "agent_created":
             if (wsData.agent) {

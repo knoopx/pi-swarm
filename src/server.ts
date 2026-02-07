@@ -624,6 +624,7 @@ app
       ws.send(
         JSON.stringify({
           type: "init",
+          cwd: BASE_PATH,
           agents: Array.from(agents.values()).map(serializeAgent),
           models: getAvailableModels(),
         }),
