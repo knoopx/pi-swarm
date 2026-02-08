@@ -3,7 +3,6 @@ import {
   Bot,
   Send,
   Loader2,
-  X,
   Play,
   Square,
   Trash2,
@@ -665,7 +664,6 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                       onMerge={handleMerge}
                       onAcceptSpec={handleAcceptSpec}
                       onDelete={handleDelete}
-                      onClose={() => setSelectedId(null)}
                     />
                   </div>
                 </div>
@@ -857,7 +855,6 @@ function AgentActions({
   onMerge,
   onAcceptSpec,
   onDelete,
-  onClose,
 }: {
   agent: Agent;
   isSpecAgent: boolean;
@@ -867,7 +864,6 @@ function AgentActions({
   onMerge: () => void;
   onAcceptSpec: () => void;
   onDelete: () => void;
-  onClose: () => void;
 }) {
   return (
     <div className="flex items-center gap-1">
@@ -931,15 +927,6 @@ function AgentActions({
           </Button>
         </TooltipTrigger>
         <TooltipContent>Delete agent</TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button size="sm" variant="ghost" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Close panel</TooltipContent>
       </Tooltip>
     </div>
   );
@@ -1010,28 +997,6 @@ function InstructInput({
         rows={1}
         disabled={disabled}
       />
-      {onInterrupt && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={handleInterrupt}
-              disabled={!value.trim() || disabled}
-              variant="destructive"
-              className="h-[44px] px-3"
-            >
-              <Zap className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Interrupt and steer (Ctrl+Enter)</TooltipContent>
-        </Tooltip>
-      )}
-      <Button
-        onClick={handleSubmit}
-        disabled={!value.trim() || disabled}
-        className="h-[44px] px-3"
-      >
-        <Send className="h-4 w-4" />
-      </Button>
     </div>
   );
 }
