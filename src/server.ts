@@ -52,6 +52,38 @@ const agents = new Map<string, Agent>();
 const wsClients = new Set<{ send: (data: string) => void }>();
 let maxConcurrency = 2;
 
+// Concurrency helpers
+function getRunningCount(): number {
+  return Array.from(agents.values()).filter((a) => a.status === "running")
+    .length;
+}
+
+function getPendingAgents(): Agent[] {
+  return Array.from(agents.values())
+    .filter((a) => a.status === "pending")
+    .sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+}
+
+function hasAvailableSlot(): boolean {
+  return getRunningCount() < maxConcurrency;
+}
+
+async function tryStartNextPending(): Promise<void> {
+  if (!hasAvailableSlot()) return;
+
+  const pending = getPendingAgents();
+  if (pending.length === 0) return;
+
+  const next = pending[0];
+  console.log(
+    `[Scheduler] Auto-starting queued agent ${next.id} (${getRunningCount()}/${maxConcurrency} slots used)`,
+  );
+  await startAgent(next);
+}
+
 // Package paths (set by CLI or defaults for dev)
 const BASE_PATH = process.env.PI_SWARM_CWD || process.cwd();
 const FRONTEND_DIST =
@@ -226,6 +258,8 @@ function handleAgentError(agent: Agent, err: unknown, context: string) {
     JSON.stringify({ type: "error", message: String(err) }) + "\n";
   broadcastAgentUpdate(agent);
   saveAgent(agent);
+  // Try to start next pending agent since a slot freed up
+  tryStartNextPending();
 }
 
 async function updateAndPersistAgent(agent: Agent) {
@@ -381,11 +415,22 @@ async function createAgentSessionAndSubscribe(
     if (event.type === "agent_end") {
       agent.status = "waiting";
       updateAndPersistAgent(agent);
+      // Try to start next pending agent since a slot freed up
+      tryStartNextPending();
     }
   });
 }
 
 async function startAgent(agent: Agent): Promise<void> {
+  // Check if there's an available slot
+  if (!hasAvailableSlot()) {
+    console.log(
+      `[Agent ${agent.id}] Queued (${getRunningCount()}/${maxConcurrency} slots used)`,
+    );
+    // Keep agent in pending state, it will auto-start when a slot frees up
+    return;
+  }
+
   agent.output = "";
   await createAgentSessionAndSubscribe(agent);
 
@@ -425,6 +470,8 @@ async function stopAgent(agent: Agent): Promise<void> {
   }
   agent.status = "stopped";
   await updateAndPersistAgent(agent);
+  // Try to start next pending agent since a slot freed up
+  await tryStartNextPending();
 }
 
 async function instructAgent(agent: Agent, instruction: string): Promise<void> {
@@ -571,6 +618,16 @@ async function mergeAgent(
       `[mergeAgent] Rebasing agent ${agent.id} onto default@, description: "${description}"`,
     );
     await Bun.$`cd ${agent.workspace} && jj rebase -r @ --onto default@`.quiet();
+
+    // Get the change ID of the rebased change and switch the default workspace to it
+    const changeIdResult =
+      await Bun.$`cd ${agent.workspace} && jj log -r @ --no-graph -T 'change_id'`.quiet();
+    const changeId = changeIdResult.stdout.toString().trim();
+    console.log(
+      `[mergeAgent] Switching default workspace to rebased change ${changeId}`,
+    );
+    await Bun.$`cd ${agent.basePath} && jj edit ${changeId}`.quiet();
+
     console.log(`[mergeAgent] Successfully merged agent ${agent.id}`);
     return { success: true };
   } catch (e) {
