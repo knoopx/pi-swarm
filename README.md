@@ -80,13 +80,13 @@ pending ──▶ running ──▶ completed
 ### Run directly with bunx (recommended)
 
 ```bash
-bunx github:knoopx/pi-swarm
+bunx github:knoopx/pi-swarm#release
 ```
 
 ### Install globally
 
 ```bash
-bun add -g github:knoopx/pi-swarm
+bun add -g github:knoopx/pi-swarm#release
 pi-swarm
 ```
 

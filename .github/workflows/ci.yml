@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build frontend
+        run: bun run build
+
+      - name: Run tests
+        run: bun test src/
+
+      - name: Push to release branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Remove dist from .gitignore for the release branch
+          sed -i '/^dist\/$/d' .gitignore
+
+          # Add dist and commit
+          git add -f dist/ .gitignore
+          git commit -m "chore: build release [skip ci]" || exit 0
+
+          # Force push to release branch
+          git push origin HEAD:release --force
