@@ -2,22 +2,8 @@
 
 import type { HTMLAttributes } from "react";
 import { cn } from "src/lib/utils";
-import { useMemo } from "react";
-import hljs from "highlight.js/lib/core";
-import json from "highlight.js/lib/languages/json";
-import typescript from "highlight.js/lib/languages/typescript";
-import python from "highlight.js/lib/languages/python";
-import bash from "highlight.js/lib/languages/bash";
-import rust from "highlight.js/lib/languages/rust";
-
-// Register languages
-hljs.registerLanguage("json", json);
-hljs.registerLanguage("typescript", typescript);
-hljs.registerLanguage("javascript", typescript);
-hljs.registerLanguage("python", python);
-hljs.registerLanguage("bash", bash);
-hljs.registerLanguage("shellscript", bash);
-hljs.registerLanguage("rust", rust);
+import { useEffect, useState } from "react";
+import { codeToHtml } from "shiki";
 
 type CodeBlockProps = HTMLAttributes<HTMLDivElement> & {
   code: string;
@@ -32,35 +18,47 @@ export const CodeBlock = ({
   className,
   ...props
 }: CodeBlockProps) => {
-  const highlighted = useMemo(() => {
-    try {
-      if (language && hljs.getLanguage(language)) {
-        return hljs.highlight(code, { language }).value;
+  const [highlighted, setHighlighted] = useState<string>("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const highlight = async () => {
+      try {
+        const html = await codeToHtml(code, {
+          lang: language === "shellscript" ? "bash" : language,
+          theme: "github-dark",
+        });
+        if (!cancelled) {
+          setHighlighted(html);
+        }
+      } catch {
+        if (!cancelled) {
+          const escaped = code
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+          setHighlighted(`<pre><code>${escaped}</code></pre>`);
+        }
       }
-      return hljs.highlightAuto(code).value;
-    } catch {
-      return code
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-    }
+    };
+
+    highlight();
+    return () => {
+      cancelled = true;
+    };
   }, [code, language]);
 
   return (
     <div
       className={cn(
-        "relative w-full overflow-hidden rounded-md bg-base01 text-base05",
+        "relative w-full overflow-hidden rounded-md bg-base01 text-base05 [&_pre]:!bg-transparent [&_pre]:overflow-auto [&_pre]:p-3 [&_pre]:text-xs [&_code]:font-mono",
+        showLineNumbers && "[&_code]:pl-8",
         className,
       )}
       {...props}
-    >
-      <pre className="hljs overflow-auto p-3 text-xs">
-        <code
-          className={cn("font-mono", showLineNumbers && "pl-8")}
-          dangerouslySetInnerHTML={{ __html: highlighted }}
-        />
-      </pre>
-    </div>
+      dangerouslySetInnerHTML={{ __html: highlighted }}
+    />
   );
 };
 
