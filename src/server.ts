@@ -27,6 +27,7 @@ import {
 // Types - extend core Agent with session
 interface Agent extends CoreAgent {
   session?: AgentSession;
+  unsubscribe?: () => void;
 }
 
 // WebSocket message types
@@ -321,10 +322,16 @@ async function createAgentSessionAndSubscribe(
     sessionManager,
   });
 
+  // Clean up any existing subscription before creating new one
+  if (agent.unsubscribe) {
+    agent.unsubscribe();
+    agent.unsubscribe = undefined;
+  }
+
   agent.session = session;
   agent.status = "running";
 
-  session.subscribe((event: AgentSessionEvent) => {
+  agent.unsubscribe = session.subscribe((event: AgentSessionEvent) => {
     agent.output += JSON.stringify(event) + "\n";
 
     // Broadcast event to all connected clients
@@ -377,6 +384,10 @@ async function resumeAgent(agent: Agent, instruction: string): Promise<void> {
 }
 
 async function stopAgent(agent: Agent): Promise<void> {
+  if (agent.unsubscribe) {
+    agent.unsubscribe();
+    agent.unsubscribe = undefined;
+  }
   if (agent.session) {
     await agent.session.abort();
   }
@@ -474,6 +485,10 @@ async function setAgentModel(
 }
 
 async function deleteAgent(agent: Agent): Promise<void> {
+  if (agent.unsubscribe) {
+    agent.unsubscribe();
+    agent.unsubscribe = undefined;
+  }
   if (agent.session) {
     try {
       await agent.session.abort();
