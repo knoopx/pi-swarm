@@ -814,7 +814,7 @@ function AgentActions({
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button size="sm" variant="outline" onClick={onMerge}>
+              <Button size="sm" variant="default" onClick={onMerge}>
                 <GitMerge className="h-4 w-4 mr-1.5" />
                 Merge
               </Button>

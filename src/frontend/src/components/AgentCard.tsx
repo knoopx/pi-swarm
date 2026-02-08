@@ -159,7 +159,7 @@ export function AgentCard({
               agent.status === "waiting") && (
               <Button
                 size="sm"
-                variant="ghost"
+                variant="default"
                 onClick={() => onMerge(agent.id)}
                 title="Merge changes"
               >
