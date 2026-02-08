@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useAgentStore } from "./store";
 import { Button } from "./components/ui/button";
+import { Input } from "./components/ui/input";
 import { CompletableTextarea } from "./components/CompletableTextarea";
 import { Badge } from "./components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
@@ -118,6 +119,7 @@ export default function App() {
     connected,
     selectedId,
     diff,
+    maxConcurrency,
     connect,
     setSelectedId,
     createAgent,
@@ -130,6 +132,7 @@ export default function App() {
     getDiff,
     mergeAgent,
     deleteAgent,
+    setMaxConcurrency,
   } = useAgentStore();
 
   const [instruction, setInstruction] = useState("");
@@ -360,6 +363,27 @@ Output ONLY the improved task specification, ready to be used as instructions fo
           </div>
 
           <div className="ml-auto flex items-center gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>Concurrency:</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={maxConcurrency}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value, 10);
+                      if (value >= 1 && value <= 10) {
+                        setMaxConcurrency(value);
+                      }
+                    }}
+                    className="w-14 h-7 text-xs text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>Maximum concurrent agents</TooltipContent>
+            </Tooltip>
             <div className="text-xs text-muted-foreground">
               {agents.length} agent{agents.length !== 1 ? "s" : ""}
               {runningCount > 0 && (

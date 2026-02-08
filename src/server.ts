@@ -47,6 +47,7 @@ interface WsResponse {
 // State
 const agents = new Map<string, Agent>();
 const wsClients = new Set<{ send: (data: string) => void }>();
+let maxConcurrency = 2;
 
 // Package paths (set by CLI or defaults for dev)
 const BASE_PATH = process.env.PI_SWARM_CWD || process.cwd();
@@ -702,6 +703,24 @@ async function handleWsCommand(
         break;
       }
 
+      case "set_max_concurrency": {
+        const value = message.maxConcurrency as number;
+        if (typeof value === "number" && value >= 1 && value <= 10) {
+          maxConcurrency = value;
+          broadcast({ type: "max_concurrency_changed", maxConcurrency });
+          sendResponse(ws, id, true, { maxConcurrency });
+        } else {
+          sendResponse(
+            ws,
+            id,
+            false,
+            undefined,
+            "Invalid concurrency value (must be 1-10)",
+          );
+        }
+        break;
+      }
+
       default:
         sendResponse(ws, id, false, undefined, `Unknown command: ${type}`);
     }
@@ -742,6 +761,7 @@ app
           agents: Array.from(agents.values()).map(serializeAgent),
           models: getAvailableModels(),
           completions: getCompletions(),
+          maxConcurrency,
         }),
       );
     },

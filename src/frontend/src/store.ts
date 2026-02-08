@@ -10,6 +10,7 @@ interface WsMessage {
   agents?: Agent[];
   models?: ModelInfo[];
   completions?: CompletionItem[];
+  maxConcurrency?: number;
   agent?: Agent;
   agentId?: string;
   event?: unknown;
@@ -39,6 +40,7 @@ interface AgentStore {
   connected: boolean;
   selectedId: string | null;
   diff: string | null;
+  maxConcurrency: number;
 
   // WebSocket
   ws: WebSocket | null;
@@ -50,6 +52,7 @@ interface AgentStore {
   setSelectedId: (id: string | null) => void;
   setDiff: (diff: string | null) => void;
   fetchCompletions: () => Promise<void>;
+  setMaxConcurrency: (value: number) => Promise<boolean>;
 
   // WebSocket Commands
   sendCommand: <T = unknown>(
@@ -91,6 +94,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   connected: false,
   selectedId: null,
   diff: null,
+  maxConcurrency: 2,
   ws: null,
   reconnectTimeout: null,
 
@@ -153,6 +157,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
               agents: hydratedAgents,
               models: wsData.models || [],
               completions: wsData.completions || [],
+              maxConcurrency: wsData.maxConcurrency ?? 2,
               loading: false,
             });
             break;
@@ -224,6 +229,12 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
               }));
             }
             break;
+
+          case "max_concurrency_changed":
+            if (wsData.maxConcurrency !== undefined) {
+              set({ maxConcurrency: wsData.maxConcurrency });
+            }
+            break;
         }
       } catch (err) {
         console.error("Failed to parse WebSocket message:", err);
@@ -255,6 +266,17 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
       set({ completions: data?.completions || [] });
     } catch (err) {
       console.error("Failed to fetch completions:", err);
+    }
+  },
+
+  setMaxConcurrency: async (value: number) => {
+    try {
+      await get().sendCommand("set_max_concurrency", { maxConcurrency: value });
+      set({ maxConcurrency: value });
+      return true;
+    } catch (err) {
+      console.error("Failed to set max concurrency:", err);
+      return false;
     }
   },
 
