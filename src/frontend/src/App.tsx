@@ -704,12 +704,8 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                   selectedAgent.status === "stopped" ||
                   selectedAgent.status === "waiting") && (
                   <div className="border-t p-4 bg-card/30 shrink-0 space-y-3">
-                    {selectedAgent.status === "running" && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      </div>
-                    )}
                     <InstructInput
+                      showSpinner={selectedAgent.status === "running"}
                       onSubmit={(msg) => {
                         if (selectedAgent.status === "stopped") {
                           resumeAgent(selectedAgent.id, msg);
@@ -912,6 +908,7 @@ function InstructInput({
   selectedModel,
   onModelChange,
   modelDisabled,
+  showSpinner,
 }: {
   onSubmit: (msg: string) => void;
   onQueue?: (msg: string) => void;
@@ -933,6 +930,7 @@ function InstructInput({
   selectedModel?: string;
   onModelChange?: (value: string) => void;
   modelDisabled?: boolean;
+  showSpinner?: boolean;
 }) {
   const [value, setValue] = useState("");
 
@@ -952,6 +950,7 @@ function InstructInput({
 
   return (
     <div className="flex gap-2 items-end">
+      {showSpinner && <Loader2 className="h-4 w-4 animate-spin mb-3" />}
       {models.length > 0 && selectedModel && onModelChange && (
         <ModelSelector
           models={models}
@@ -990,40 +989,46 @@ function UsageDisplay({ usage }: { usage: AccumulatedUsage }) {
     return `$${n.toFixed(2)}`;
   };
 
-  if (usage.totalTokens === 0) return null;
-
   return (
-    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex items-center gap-1">
-            <Zap className="h-3 w-3" />
-            <span>{formatNumber(usage.totalTokens)}</span>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <div className="space-y-1">
-            <div>Input: {formatNumber(usage.input)} tokens</div>
-            <div>Output: {formatNumber(usage.output)} tokens</div>
-            {usage.cacheRead > 0 && (
-              <div>Cache read: {formatNumber(usage.cacheRead)} tokens</div>
-            )}
-            {usage.cacheWrite > 0 && (
-              <div>Cache write: {formatNumber(usage.cacheWrite)} tokens</div>
-            )}
-          </div>
-        </TooltipContent>
-      </Tooltip>
-      {usage.totalCost > 0 && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center gap-1">
-              <Coins className="h-3 w-3" />
-              <span>{formatCost(usage.totalCost)}</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>Total cost for this session</TooltipContent>
-        </Tooltip>
+    <div className="flex items-center gap-3 text-xs text-muted-foreground min-w-[100px]">
+      {usage.totalTokens === 0 ? (
+        <span className="invisible">placeholder</span>
+      ) : (
+        <>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-1">
+                <Zap className="h-3 w-3" />
+                <span>{formatNumber(usage.totalTokens)}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="space-y-1">
+                <div>Input: {formatNumber(usage.input)} tokens</div>
+                <div>Output: {formatNumber(usage.output)} tokens</div>
+                {usage.cacheRead > 0 && (
+                  <div>Cache read: {formatNumber(usage.cacheRead)} tokens</div>
+                )}
+                {usage.cacheWrite > 0 && (
+                  <div>
+                    Cache write: {formatNumber(usage.cacheWrite)} tokens
+                  </div>
+                )}
+              </div>
+            </TooltipContent>
+          </Tooltip>
+          {usage.totalCost > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1">
+                  <Coins className="h-3 w-3" />
+                  <span>{formatCost(usage.totalCost)}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>Total cost for this session</TooltipContent>
+            </Tooltip>
+          )}
+        </>
       )}
     </div>
   );
