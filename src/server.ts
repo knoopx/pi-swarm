@@ -531,10 +531,7 @@ async function mergeAgent(
   }
 
   try {
-    const cidResult =
-      await Bun.$`cd ${agent.workspace} && jj log -r @ --no-graph -T 'change_id'`.quiet();
-    const cid = cidResult.stdout.toString().trim();
-    // Get the description from the agent's change to use as merge message
+    // Get the description from the agent's change to use as merge message (before rebase)
     const descResult =
       await Bun.$`cd ${agent.workspace} && jj log -r @ --no-graph -T 'description'`.quiet();
     const changeDescription = descResult.stdout.toString();
@@ -542,8 +539,8 @@ async function mergeAgent(
       changeDescription,
       agent.instruction,
     );
-    // Squash agent's changes into the main workspace (no new change created)
-    await Bun.$`cd ${agent.basePath} && jj squash --from ${cid} --into default@ -m ${description}`.quiet();
+
+    await Bun.$`cd ${agent.workspace} && jj rebase -r ${cid} --onto default@`.quiet();
     return { success: true };
   } catch (e) {
     return { success: false, error: String(e) };
