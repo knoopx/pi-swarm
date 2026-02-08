@@ -423,37 +423,37 @@ describe("Task Workflow", () => {
           {
             hasSession: true,
             status: "running" as const,
-            expected: "continue_active",
+            expected: "continue_active" as const,
           },
           {
             hasSession: true,
             status: "waiting" as const,
-            expected: "continue_active",
+            expected: "continue_active" as const,
           },
           {
             hasSession: true,
             status: "stopped" as const,
-            expected: "resume_session",
+            expected: "resume_session" as const,
           },
           {
             hasSession: false,
             status: "stopped" as const,
-            expected: "resume_session",
+            expected: "resume_session" as const,
           },
           {
             hasSession: false,
             status: "pending" as const,
-            expected: "start_fresh",
+            expected: "start_fresh" as const,
           },
           {
             hasSession: false,
             status: "error" as const,
-            expected: "start_fresh",
+            expected: "start_fresh" as const,
           },
           {
             hasSession: false,
             status: "completed" as const,
-            expected: "start_fresh",
+            expected: "start_fresh" as const,
           },
         ];
 
