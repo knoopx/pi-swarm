@@ -508,8 +508,8 @@ async function instructAgent(
 
   switch (action) {
     case "continue_active":
-      // Active session - create new change and send prompt
-      await Bun.$`cd ${agent.workspace} && jj new -m ${instruction}`.quiet();
+      // Active session - set or create change and send prompt
+      await setOrCreateChange(agent.workspace, instruction);
       agent.status = "running";
       agent.instruction = instruction;
       // Use 'followUp' to queue message, 'steer' to redirect immediately
@@ -523,8 +523,8 @@ async function instructAgent(
       break;
 
     case "resume_session":
-      // Stopped agent - create new change and resume with session history
-      await Bun.$`cd ${agent.workspace} && jj new -m ${instruction}`.quiet();
+      // Stopped agent - set or create change and resume with session history
+      await setOrCreateChange(agent.workspace, instruction);
       agent.instruction = instruction;
       await resumeAgent(agent, instruction);
       return; // resumeAgent handles broadcast/save
@@ -557,8 +557,8 @@ async function interruptAgent(
     JSON.stringify({ type: "interrupt", message: "Interrupted by user" }) +
     "\n";
 
-  // Create new change for the interrupt instruction
-  await Bun.$`cd ${agent.workspace} && jj new -m ${instruction}`.quiet();
+  // Set or create change for the interrupt instruction
+  await setOrCreateChange(agent.workspace, instruction);
 
   // Resume with the new steering instruction
   await createAgentSessionAndSubscribe(agent, { resume: true });
