@@ -325,6 +325,31 @@ async function getDiff(workspace: string): Promise<string> {
   }
 }
 
+async function isCurrentChangeEmpty(workspace: string): Promise<boolean> {
+  try {
+    // Check if the current change (@) has any file modifications
+    const result =
+      await Bun.$`cd ${workspace} && jj log -r @ --no-graph -T 'if(empty, "empty", "has-changes")'`.quiet();
+    return result.stdout.toString().trim() === "empty";
+  } catch {
+    return false;
+  }
+}
+
+async function setOrCreateChange(
+  workspace: string,
+  instruction: string,
+): Promise<void> {
+  const isEmpty = await isCurrentChangeEmpty(workspace);
+  if (isEmpty) {
+    // Re-use current change and update its description
+    await Bun.$`cd ${workspace} && jj describe -m ${instruction}`.quiet();
+  } else {
+    // Create a new change
+    await Bun.$`cd ${workspace} && jj new -m ${instruction}`.quiet();
+  }
+}
+
 function getDefaultModel(): {
   model: Model<Api>;
   provider: string;
