@@ -345,9 +345,9 @@ async function startAgent(agent: Agent): Promise<void> {
   agent.output = "";
   await createAgentSessionAndSubscribe(agent);
 
-  // Set the change description after session is created (avoids double changes)
+  // Set the change description (workspace add already created the change)
   if (agent.instruction) {
-    await Bun.$`cd ${agent.workspace} && jj desc -m ${agent.instruction}`.quiet();
+    await Bun.$`cd ${agent.workspace} && jj desc -r @ -m ${agent.instruction}`.quiet();
   }
 
   console.log(
@@ -501,8 +501,8 @@ async function mergeAgent(
     const cidResult =
       await Bun.$`cd ${agent.workspace} && jj log -r @ --no-graph -T 'change_id'`.quiet();
     const cid = cidResult.stdout.toString().trim();
-    // Rebase agent's change onto the root workspace
-    await Bun.$`cd ${agent.basePath} && jj rebase -r ${cid} -d default@`.quiet();
+    // Squash agent's changes into the main workspace (no new change created)
+    await Bun.$`cd ${agent.basePath} && jj squash --from ${cid} --into default@`.quiet();
     return { success: true };
   } catch (e) {
     return { success: false, error: String(e) };
