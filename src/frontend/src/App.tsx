@@ -950,7 +950,9 @@ function InstructInput({
 
   return (
     <div className="flex gap-2 items-end">
-      {showSpinner && <Loader2 className="h-4 w-4 animate-spin mb-3" />}
+      <Loader2
+        className={`h-4 w-4 mb-3 ${showSpinner ? "animate-spin" : "invisible"}`}
+      />
       {models.length > 0 && selectedModel && onModelChange && (
         <ModelSelector
           models={models}
