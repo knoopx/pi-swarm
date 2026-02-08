@@ -488,7 +488,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
 
         <div className="flex-1 flex overflow-hidden">
           {/* Sidebar */}
-          <aside className="w-80 border-r bg-card/30 flex flex-col shrink-0">
+          <aside className="w-96 border-r bg-card/30 flex flex-col shrink-0">
             {/* New Task Form */}
             <div className="p-4 border-b space-y-3">
               <ModelSelector
