@@ -129,7 +129,6 @@ export default function App() {
     stopAgent,
     resumeAgent,
     instructAgent,
-    interruptAgent,
     setAgentModel,
     getDiff,
     mergeAgent,
@@ -722,9 +721,12 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                           instructAgent(selectedAgent.id, msg);
                         }
                       }}
-                      onInterrupt={
+                      onQueue={
                         selectedAgent.status === "running"
-                          ? (msg) => interruptAgent(selectedAgent.id, msg)
+                          ? (msg) =>
+                              instructAgent(selectedAgent.id, msg, {
+                                queue: true,
+                              })
                           : undefined
                       }
                       disabled={false}
@@ -732,7 +734,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                         selectedAgent.status === "stopped"
                           ? "Send instruction to resume..."
                           : selectedAgent.status === "running"
-                            ? "Steer agent... (Enter to follow-up, Ctrl+Enter to interrupt)"
+                            ? "Steer agent... (Enter to steer, Ctrl+Enter to queue)"
                             : "Send follow-up instruction..."
                       }
                       completions={completions}
@@ -905,7 +907,7 @@ function AgentActions({
 
 function InstructInput({
   onSubmit,
-  onInterrupt,
+  onQueue,
   disabled,
   placeholder = "Send follow-up instruction...",
   completions = [],
@@ -916,7 +918,7 @@ function InstructInput({
   modelDisabled,
 }: {
   onSubmit: (msg: string) => void;
-  onInterrupt?: (msg: string) => void;
+  onQueue?: (msg: string) => void;
   disabled?: boolean;
   placeholder?: string;
   completions?: {
@@ -945,9 +947,9 @@ function InstructInput({
     }
   };
 
-  const handleInterrupt = () => {
-    if (value.trim() && onInterrupt) {
-      onInterrupt(value);
+  const handleQueue = () => {
+    if (value.trim() && onQueue) {
+      onQueue(value);
       setValue("");
     }
   };
@@ -968,7 +970,7 @@ function InstructInput({
         value={value}
         onChange={setValue}
         onSubmit={handleSubmit}
-        onInterrupt={onInterrupt ? handleInterrupt : undefined}
+        onQueue={onQueue ? handleQueue : undefined}
         completions={completions}
         fileCompletions={fileCompletions}
         className="min-h-[44px] resize-none text-sm flex-1"

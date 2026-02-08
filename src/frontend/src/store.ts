@@ -78,7 +78,11 @@ interface AgentStore {
   startAgent: (id: string) => Promise<boolean>;
   stopAgent: (id: string) => Promise<boolean>;
   resumeAgent: (id: string, instruction?: string) => Promise<boolean>;
-  instructAgent: (id: string, instruction: string) => Promise<boolean>;
+  instructAgent: (
+    id: string,
+    instruction: string,
+    options?: { queue?: boolean },
+  ) => Promise<boolean>;
   interruptAgent: (id: string, instruction: string) => Promise<boolean>;
   setAgentModel: (
     id: string,
@@ -410,9 +414,13 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     }
   },
 
-  instructAgent: async (id, instruction) => {
+  instructAgent: async (id, instruction, options = {}) => {
     try {
-      await get().sendCommand("instruct_agent", { agentId: id, instruction });
+      await get().sendCommand("instruct_agent", {
+        agentId: id,
+        instruction,
+        queue: options.queue,
+      });
       return true;
     } catch (err) {
       console.error("Failed to instruct agent:", err);

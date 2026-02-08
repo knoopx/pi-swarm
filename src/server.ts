@@ -474,7 +474,11 @@ async function stopAgent(agent: Agent): Promise<void> {
   await tryStartNextPending();
 }
 
-async function instructAgent(agent: Agent, instruction: string): Promise<void> {
+async function instructAgent(
+  agent: Agent,
+  instruction: string,
+  options: { queue?: boolean } = {},
+): Promise<void> {
   const action = determineAgentAction(!!agent.session, agent.status);
 
   switch (action) {
@@ -483,9 +487,11 @@ async function instructAgent(agent: Agent, instruction: string): Promise<void> {
       await Bun.$`cd ${agent.workspace} && jj new -m ${instruction}`.quiet();
       agent.status = "running";
       agent.instruction = instruction;
-      // Use 'steer' if agent is currently streaming to redirect it
+      // Use 'followUp' to queue message, 'steer' to redirect immediately
       agent
-        .session!.prompt(instruction, { streamingBehavior: "steer" })
+        .session!.prompt(instruction, {
+          streamingBehavior: options.queue ? "followUp" : "steer",
+        })
         .catch((err) => {
           handleAgentError(agent, err, "instruction error");
         });
@@ -742,7 +748,9 @@ async function handleWsCommand(
           sendResponse(ws, id, false, undefined, "Agent not found");
           return;
         }
-        await instructAgent(agent, message.instruction as string);
+        await instructAgent(agent, message.instruction as string, {
+          queue: message.queue as boolean,
+        });
         sendResponse(ws, id, true, serializeAgent(agent));
         break;
       }

@@ -30,7 +30,7 @@ interface CompletableTextareaProps extends Omit<
   completions: CompletionItem[];
   fileCompletions?: CompletionItem[];
   onSubmit?: () => void;
-  onInterrupt?: () => void;
+  onQueue?: () => void;
 }
 
 const CompletableTextarea = React.forwardRef<
@@ -44,7 +44,7 @@ const CompletableTextarea = React.forwardRef<
       completions,
       fileCompletions = [],
       onSubmit,
-      onInterrupt,
+      onQueue,
       className,
       disabled,
       ...props
@@ -219,10 +219,10 @@ const CompletableTextarea = React.forwardRef<
           return;
         }
 
-        // Ctrl/Cmd+Enter = interrupt/steering
+        // Ctrl/Cmd+Enter = queue message (processed after current operation)
         if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
           e.preventDefault();
-          onInterrupt?.();
+          onQueue?.();
           return;
         }
 
