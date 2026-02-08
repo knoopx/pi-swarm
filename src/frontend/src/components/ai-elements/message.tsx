@@ -27,7 +27,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import remarkEmoji from "remark-emoji";
 import rehypeKatex from "rehype-katex";
-import rehypeHighlight from "rehype-highlight";
+import { CodeBlock } from "./code-block";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -334,7 +334,29 @@ export const MessageResponse = memo(
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath, remarkEmoji]}
-        rehypePlugins={[rehypeKatex, rehypeHighlight]}
+        rehypePlugins={[rehypeKatex]}
+        components={{
+          code({ className, children, ...codeProps }) {
+            const match = /language-(\w+)/.exec(className || "");
+            const isInline = !match;
+            if (isInline) {
+              return (
+                <code className={className} {...codeProps}>
+                  {children}
+                </code>
+              );
+            }
+            return (
+              <CodeBlock
+                code={String(children).replace(/\n$/, "")}
+                language={match[1]}
+              />
+            );
+          },
+          pre({ children }) {
+            return <>{children}</>;
+          },
+        }}
       >
         {children}
       </ReactMarkdown>
