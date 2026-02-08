@@ -182,19 +182,42 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
           case "agent_updated":
             if (wsData.agent) {
               set((state) => ({
-                agents: state.agents.map((a) =>
-                  a.id === wsData.agent!.id
-                    ? {
-                        ...a,
-                        ...wsData.agent,
-                        // Re-parse if output changed significantly (e.g., agent restart)
-                        conversation:
-                          wsData.agent!.output !== a.output
-                            ? parseOutputToState(wsData.agent!.output)
-                            : a.conversation,
-                      }
-                    : a,
-                ),
+                agents: state.agents.map((a) => {
+                  if (a.id !== wsData.agent!.id) return a;
+
+                  const serverOutput = wsData.agent!.output;
+                  const localOutput = a.output;
+
+                  // Determine if we need to re-parse the conversation:
+                  // - If server output starts with local output, we're just ahead (no re-parse needed)
+                  // - If local output starts with server output, server is behind (no re-parse needed)
+                  // - If they diverge completely (e.g., agent restart), re-parse from server
+                  const shouldReparse =
+                    serverOutput !== localOutput &&
+                    !serverOutput.startsWith(localOutput) &&
+                    !localOutput.startsWith(serverOutput);
+
+                  return {
+                    ...a,
+                    // Keep local output if it's ahead of server (has more events)
+                    // Otherwise use server output
+                    output: localOutput.startsWith(serverOutput)
+                      ? localOutput
+                      : serverOutput,
+                    // Only spread non-output fields from server
+                    status: wsData.agent!.status,
+                    instruction: wsData.agent!.instruction,
+                    modifiedFiles: wsData.agent!.modifiedFiles,
+                    diffStat: wsData.agent!.diffStat,
+                    updatedAt: wsData.agent!.updatedAt,
+                    model: wsData.agent!.model,
+                    provider: wsData.agent!.provider,
+                    // Re-parse only on complete divergence (agent restart)
+                    conversation: shouldReparse
+                      ? parseOutputToState(serverOutput)
+                      : a.conversation,
+                  };
+                }),
               }));
             }
             break;
