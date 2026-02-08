@@ -163,13 +163,13 @@ describe("conversation-state", () => {
       });
     });
 
-    describe("message_update with reasoning/thinking", () => {
+    describe("message_update with thinking_delta", () => {
       it("accumulates thinking in pendingThinking", () => {
         const state = createConversationState();
 
         let newState = processEvent(state, {
           type: "message_update",
-          assistantMessageEvent: { type: "reasoning", text: "I think " },
+          assistantMessageEvent: { type: "thinking_delta", delta: "I think " },
         });
 
         expect(newState.pendingThinking).toBe("I think ");

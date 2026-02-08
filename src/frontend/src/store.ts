@@ -100,7 +100,14 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   connect: () => {
     const state = get();
-    if (state.ws?.readyState === WebSocket.OPEN) return;
+    // Check for both OPEN and CONNECTING to prevent duplicate connections
+    // (React StrictMode double-mounts can cause race conditions)
+    if (
+      state.ws?.readyState === WebSocket.OPEN ||
+      state.ws?.readyState === WebSocket.CONNECTING
+    ) {
+      return;
+    }
 
     const ws = new WebSocket(WS_URL);
 
@@ -188,23 +195,22 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
                   const serverOutput = wsData.agent!.output;
                   const localOutput = a.output;
 
-                  // Determine if we need to re-parse the conversation:
-                  // - If server output starts with local output, we're just ahead (no re-parse needed)
-                  // - If local output starts with server output, server is behind (no re-parse needed)
-                  // - If they diverge completely (e.g., agent restart), re-parse from server
-                  const shouldReparse =
-                    serverOutput !== localOutput &&
-                    !serverOutput.startsWith(localOutput) &&
-                    !localOutput.startsWith(serverOutput);
+                  // Determine which output to use and whether to re-parse:
+                  // - If local is ahead (has more events from agent_events), keep local
+                  // - If server is ahead or outputs diverge, use server and re-parse
+                  const localIsAhead =
+                    localOutput.startsWith(serverOutput) &&
+                    localOutput !== serverOutput;
+                  const outputsMatch = serverOutput === localOutput;
+
+                  // Use server output unless local is strictly ahead
+                  const useLocalOutput = localIsAhead;
+                  // Re-parse when taking server output that differs from local
+                  const shouldReparse = !outputsMatch && !localIsAhead;
 
                   return {
                     ...a,
-                    // Keep local output if it's ahead of server (has more events)
-                    // Otherwise use server output
-                    output: localOutput.startsWith(serverOutput)
-                      ? localOutput
-                      : serverOutput,
-                    // Only spread non-output fields from server
+                    output: useLocalOutput ? localOutput : serverOutput,
                     status: wsData.agent!.status,
                     instruction: wsData.agent!.instruction,
                     modifiedFiles: wsData.agent!.modifiedFiles,
@@ -212,7 +218,6 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
                     updatedAt: wsData.agent!.updatedAt,
                     model: wsData.agent!.model,
                     provider: wsData.agent!.provider,
-                    // Re-parse only on complete divergence (agent restart)
                     conversation: shouldReparse
                       ? parseOutputToState(serverOutput)
                       : a.conversation,

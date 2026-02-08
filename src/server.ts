@@ -220,16 +220,23 @@ function sendResponse(
   ws.send(JSON.stringify(response));
 }
 
-async function createWorkspace(basePath: string, id: string): Promise<string> {
+async function createWorkspace(
+  basePath: string,
+  id: string,
+  instruction: string,
+): Promise<string> {
   const workspace = buildWorkspacePath(basePath, id);
   await Bun.$`mkdir -p ${basePath}/.pi/swarm/workspaces`.quiet();
-  await Bun.$`cd ${basePath} && jj workspace add ${workspace} --name ${id}`.quiet();
+  // Use -r default@ to make the new workspace's change descend from the default workspace's current change
+  // Without this, the new workspace would be a sibling (same parent) instead of a child
+  await Bun.$`cd ${basePath} && jj workspace add ${workspace} --name ${id} -m ${instruction} -r default@`.quiet();
   return workspace;
 }
 
 async function getModifiedFiles(workspace: string): Promise<string[]> {
   try {
-    const result = await Bun.$`cd ${workspace} && jj diff --name-only`.quiet();
+    // Use -r @- to show files changed in current commit (from parent to @)
+    const result = await Bun.$`cd ${workspace} && jj diff --name-only -r @-`.quiet();
     return result.stdout.toString().split("\n").filter(Boolean);
   } catch {
     return [];
@@ -238,7 +245,8 @@ async function getModifiedFiles(workspace: string): Promise<string[]> {
 
 async function getDiffStat(workspace: string): Promise<string> {
   try {
-    const result = await Bun.$`cd ${workspace} && jj diff --stat`.quiet();
+    // Use -r @- to show stat of changes in current commit
+    const result = await Bun.$`cd ${workspace} && jj diff --stat -r @-`.quiet();
     return result.stdout.toString();
   } catch {
     return "";
@@ -247,7 +255,9 @@ async function getDiffStat(workspace: string): Promise<string> {
 
 async function getDiff(workspace: string): Promise<string> {
   try {
-    const result = await Bun.$`cd ${workspace} && jj diff --git`.quiet();
+    // Use -r @- to show diff from parent commit to current commit
+    // Without this, only uncommitted working copy changes would be shown
+    const result = await Bun.$`cd ${workspace} && jj diff --git -r @-`.quiet();
     return result.stdout.toString();
   } catch {
     return "";
@@ -352,11 +362,6 @@ async function startAgent(agent: Agent): Promise<void> {
   agent.output = "";
   await createAgentSessionAndSubscribe(agent);
 
-  // Set the change description (workspace add already created the change)
-  if (agent.instruction) {
-    await Bun.$`cd ${agent.workspace} && jj desc -r @ -m ${agent.instruction}`.quiet();
-  }
-
   console.log(
     `[Agent ${agent.id}] Starting with instruction:`,
     agent.instruction.substring(0, 200),
@@ -404,7 +409,8 @@ async function instructAgent(agent: Agent, instruction: string): Promise<void> {
       await Bun.$`cd ${agent.workspace} && jj new -m ${instruction}`.quiet();
       agent.status = "running";
       agent.instruction = instruction;
-      agent.session!.prompt(instruction).catch((err) => {
+      // Use 'steer' if agent is currently streaming to redirect it
+      agent.session!.prompt(instruction, { streamingBehavior: "steer" }).catch((err) => {
         handleAgentError(agent, err, "instruction error");
       });
       break;
@@ -536,7 +542,11 @@ async function handleWsCommand(
       case "create_agent": {
         const agentId = generateId();
         const instruction = (message.instruction as string) || "";
-        const workspace = await createWorkspace(BASE_PATH, agentId);
+        const workspace = await createWorkspace(
+          BASE_PATH,
+          agentId,
+          instruction,
+        );
 
         let { provider, model: modelId } = message as {
           provider?: string;

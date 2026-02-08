@@ -20,6 +20,7 @@ import {
   ListPlus,
   Coins,
   Zap,
+  Command,
 } from "lucide-react";
 import { useAgentStore } from "./store";
 import { Button } from "./components/ui/button";
@@ -36,6 +37,7 @@ import {
 import { ConversationLog } from "./components/ConversationLog";
 import { ReviewMode, type ReviewComment } from "./components/ReviewMode";
 import { ModelSelector } from "./components/ModelSelector";
+import { CommandBar } from "./components/CommandBar";
 import {
   extractTextFromConversation,
   type AccumulatedUsage,
@@ -142,6 +144,54 @@ export default function App() {
   const [creating, setCreating] = useState(false);
   const [refining, setRefining] = useState(false);
   const [activeTab, setActiveTab] = useState("output");
+  const [commandBarOpen, setCommandBarOpen] = useState(false);
+  const instructionInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K - Open command bar
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCommandBarOpen(true);
+        return;
+      }
+
+      // Don't trigger shortcuts when typing in inputs
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      // N - New task (focus instruction input)
+      if (e.key === "n" && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        instructionInputRef.current?.focus();
+        return;
+      }
+
+      // Escape - Close selected agent
+      if (e.key === "Escape" && selectedId) {
+        e.preventDefault();
+        setSelectedId(null);
+        return;
+      }
+
+      // R - Toggle review tab
+      if (e.key === "r" && selectedId) {
+        e.preventDefault();
+        setActiveTab((prev) => (prev === "review" ? "output" : "review"));
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedId, setSelectedId]);
 
   // Set default model when models load
   useEffect(() => {
@@ -345,8 +395,40 @@ Output ONLY the improved task specification, ready to be used as instructions fo
     setSelectedId(null);
   }, [selectedAgent, deleteAgent, setSelectedId]);
 
+  const handleFocusInstruction = useCallback(() => {
+    instructionInputRef.current?.focus();
+  }, []);
+
   return (
     <TooltipProvider delayDuration={300}>
+      {/* Command Bar */}
+      <CommandBar
+        open={commandBarOpen}
+        onOpenChange={setCommandBarOpen}
+        agents={agents}
+        selectedId={selectedId}
+        onSelectAgent={handleSelectAgent}
+        onCreateAgent={handleFocusInstruction}
+        onStartAgent={startAgent}
+        onStopAgent={stopAgent}
+        onResumeAgent={(id) => resumeAgent(id)}
+        onMergeAgent={async (id) => {
+          const success = await mergeAgent(id);
+          if (success) {
+            await deleteAgent(id);
+            if (selectedId === id) setSelectedId(null);
+          }
+        }}
+        onDeleteAgent={async (id) => {
+          await deleteAgent(id);
+          if (selectedId === id) setSelectedId(null);
+        }}
+        onToggleReview={() =>
+          setActiveTab((prev) => (prev === "review" ? "output" : "review"))
+        }
+        showReview={activeTab === "review"}
+      />
+
       <div className="h-screen flex flex-col bg-background">
         {/* Header */}
         <header className="h-14 border-b bg-card/50 backdrop-blur-sm flex items-center px-4 shrink-0">
@@ -363,6 +445,24 @@ Output ONLY the improved task specification, ready to be used as instructions fo
           </div>
 
           <div className="ml-auto flex items-center gap-3">
+            {/* Command Bar Button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCommandBarOpen(true)}
+                  className="h-7 gap-1.5 text-xs text-muted-foreground"
+                >
+                  <Command className="h-3 w-3" />
+                  <span className="hidden sm:inline">Command</span>
+                  <kbd className="pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
+                    ⌘K
+                  </kbd>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Open command palette</TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -434,7 +534,8 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                 }
               />
               <CompletableTextarea
-                placeholder="Describe your task... (Enter to start)"
+                ref={instructionInputRef}
+                placeholder="Describe your task... (Enter to start, ⌘K for commands)"
                 value={instruction}
                 onChange={setInstruction}
                 onSubmit={handleCreate}
@@ -927,7 +1028,7 @@ function InstructInput({
       <Button
         onClick={handleSubmit}
         disabled={!value.trim() || disabled}
-        className="h-[44px] px-4"
+        className="h-[44px] px-3"
       >
         <Send className="h-4 w-4" />
       </Button>

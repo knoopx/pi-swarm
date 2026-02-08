@@ -162,6 +162,7 @@ export function processEvent(
 
       const msgType = msgEvent.type as string;
 
+      // Text streaming
       if (msgType === "text_delta" && msgEvent.delta) {
         return {
           ...state,
@@ -169,13 +170,7 @@ export function processEvent(
         };
       }
 
-      if (msgType === "reasoning" && msgEvent.text) {
-        return {
-          ...state,
-          pendingThinking: state.pendingThinking + (msgEvent.text as string),
-        };
-      }
-
+      // Thinking/reasoning streaming
       if (msgType === "thinking_delta" && msgEvent.delta) {
         return {
           ...state,
@@ -183,33 +178,34 @@ export function processEvent(
         };
       }
 
+      // Thinking start - flush pending text before thinking
+      if (msgType === "thinking_start") {
+        if (!state.pendingText.trim()) return state;
+
+        const events = [...state.events];
+        events.push({
+          type: "text",
+          content: state.pendingText.trim(),
+          role: "assistant",
+        });
+
+        return { ...state, events, pendingText: "" };
+      }
+
+      // Thinking end - flush thinking content
+      if (msgType === "thinking_end") {
+        if (!state.pendingThinking.trim()) return state;
+
+        const events = [...state.events];
+        events.push({
+          type: "thinking",
+          content: state.pendingThinking.trim(),
+        });
+
+        return { ...state, events, pendingThinking: "" };
+      }
+
       return state;
-    }
-
-    case "thinking_start":
-    case "reasoning_start": {
-      // Flush pending text before thinking starts
-      if (!state.pendingText.trim()) return state;
-
-      const events = [...state.events];
-      events.push({
-        type: "text",
-        content: state.pendingText.trim(),
-        role: "assistant",
-      });
-
-      return { ...state, events, pendingText: "" };
-    }
-
-    case "thinking_end":
-    case "reasoning_end": {
-      // Flush thinking
-      if (!state.pendingThinking.trim()) return state;
-
-      const events = [...state.events];
-      events.push({ type: "thinking", content: state.pendingThinking.trim() });
-
-      return { ...state, events, pendingThinking: "" };
     }
 
     case "message_end": {

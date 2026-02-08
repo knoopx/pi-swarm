@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Plus, Send } from "lucide-react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
@@ -14,6 +14,11 @@ interface CreateAgentFormProps {
 export function CreateAgentForm({ onCreate }: CreateAgentFormProps) {
   const [instruction, setInstruction] = useState("");
   const [creating, setCreating] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +50,7 @@ export function CreateAgentForm({ onCreate }: CreateAgentFormProps) {
     <form onSubmit={handleSubmit} className="flex gap-3 items-end">
       <div className="flex-1">
         <Textarea
+          ref={textareaRef}
           placeholder="Describe the task for a new agent... (Ctrl+Enter to submit)"
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}

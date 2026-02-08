@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Loader2, AlertTriangle, Info, XCircle } from "lucide-react";
 import {
   Conversation,
@@ -20,8 +20,62 @@ import {
 import { Thinking, ThinkingContent } from "./ai-elements/thinking";
 import type { ToolUIPart } from "ai";
 import type { ConversationState } from "../lib/conversation-state";
+import type { ToolEvent, ConversationEvent } from "../lib/events";
 import { getDisplayEvents } from "../lib/conversation-state";
 import { extractToolResult } from "../lib/shared";
+
+// Auto-closing tool wrapper - closes automatically on successful completion
+interface AutoClosingToolProps {
+  event: ToolEvent;
+  resultText: string;
+}
+
+function AutoClosingTool({ event, resultText }: AutoClosingToolProps) {
+  const isRunning =
+    event.state === "input-available" || event.state === "input-streaming";
+  const hasError = event.state === "output-error";
+  const isCompleted = event.state === "output-available";
+
+  // Track if user has manually interacted with the collapsible
+  const [userOverride, setUserOverride] = useState<boolean | null>(null);
+
+  // Reset user override when tool starts running again
+  useEffect(() => {
+    if (isRunning) {
+      setUserOverride(null);
+    }
+  }, [isRunning]);
+
+  // Compute open state: user override takes precedence, otherwise auto behavior
+  const isOpen =
+    userOverride !== null
+      ? userOverride
+      : hasError || isRunning
+        ? true
+        : isCompleted
+          ? false
+          : false;
+
+  return (
+    <Tool open={isOpen} onOpenChange={setUserOverride}>
+      <ToolHeader
+        type={`tool-${event.toolName}` as ToolUIPart["type"]}
+        state={event.state}
+        title={event.toolName}
+        input={event.args}
+      />
+      <ToolContent>
+        <ToolInput input={event.args} />
+        {(resultText || event.isError) && (
+          <ToolOutput
+            output={resultText}
+            errorText={event.isError ? resultText : undefined}
+          />
+        )}
+      </ToolContent>
+    </Tool>
+  );
+}
 
 interface ConversationLogProps {
   conversation: ConversationState;
@@ -49,7 +103,7 @@ export function ConversationLog({
           </div>
         )}
 
-        {events.map((event, i) => {
+        {events.map((event: ConversationEvent, i: number) => {
           if (event.type === "processing") {
             return (
               <div
@@ -65,26 +119,11 @@ export function ConversationLog({
           if (event.type === "tool") {
             const resultText = extractToolResult(event.result);
             return (
-              <Tool
+              <AutoClosingTool
                 key={`${event.toolCallId}-${i}`}
-                defaultOpen={event.state === "output-error"}
-              >
-                <ToolHeader
-                  type={`tool-${event.toolName}` as ToolUIPart["type"]}
-                  state={event.state}
-                  title={event.toolName}
-                  input={event.args}
-                />
-                <ToolContent>
-                  <ToolInput input={event.args} />
-                  {(resultText || event.isError) && (
-                    <ToolOutput
-                      output={resultText}
-                      errorText={event.isError ? resultText : undefined}
-                    />
-                  )}
-                </ToolContent>
-              </Tool>
+                event={event}
+                resultText={resultText}
+              />
             );
           }
 
