@@ -231,51 +231,44 @@ export default function App() {
   const sortedAgents = sortAgents(agents);
   const runningCount = agents.filter((a) => a.status === "running").length;
 
-  // Auto-refresh diff when file-related tools complete
-  const seenToolCallsRef = useRef<Set<string>>(new Set());
+  // Auto-refresh diff when modified files change
+  const prevModifiedFilesRef = useRef<string | null>(null);
   const diffRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
 
   useEffect(() => {
-    // Auto-refresh diff when file-related tools complete (for badge count)
     if (!selectedAgent) return;
 
-    const fileModifyingTools = new Set(["Write", "Edit"]);
-    const completedFileTools: string[] = [];
+    // Create a stable key from modifiedFiles to detect changes
+    const modifiedFilesKey = selectedAgent.modifiedFiles?.join(",") ?? "";
 
-    // Find newly completed file-modifying tool calls
-    for (const [toolId, tool] of selectedAgent.conversation.toolsById) {
-      if (
-        fileModifyingTools.has(tool.toolName) &&
-        (tool.state === "output-available" || tool.state === "output-error") &&
-        !seenToolCallsRef.current.has(toolId)
-      ) {
-        completedFileTools.push(toolId);
-        seenToolCallsRef.current.add(toolId);
-      }
-    }
-
-    // If new file tools completed, debounce refresh diff
-    if (completedFileTools.length > 0) {
+    // Only refresh if files actually changed (not just on first render)
+    if (
+      prevModifiedFilesRef.current !== null &&
+      prevModifiedFilesRef.current !== modifiedFilesKey
+    ) {
+      // Debounce the diff refresh
       if (diffRefreshTimeoutRef.current) {
         clearTimeout(diffRefreshTimeoutRef.current);
       }
       diffRefreshTimeoutRef.current = setTimeout(() => {
         getDiff(selectedAgent.id);
-      }, 500);
+      }, 300);
     }
+
+    prevModifiedFilesRef.current = modifiedFilesKey;
 
     return () => {
       if (diffRefreshTimeoutRef.current) {
         clearTimeout(diffRefreshTimeoutRef.current);
       }
     };
-  }, [selectedAgent?.conversation.toolsById, selectedAgent?.id, getDiff]);
+  }, [selectedAgent?.modifiedFiles, selectedAgent?.id, getDiff]);
 
-  // Reset seen tools when switching agents
+  // Reset tracking when switching agents
   useEffect(() => {
-    seenToolCallsRef.current.clear();
+    prevModifiedFilesRef.current = null;
   }, [selectedId]);
 
   // Count changed files from diff
