@@ -850,6 +850,8 @@ async function handleWsCommand(
           maxConcurrency = value;
           broadcast({ type: "max_concurrency_changed", maxConcurrency });
           sendResponse(ws, id, true, { maxConcurrency });
+          // Try to start pending agents if concurrency increased
+          await tryStartNextPending();
         } else {
           sendResponse(
             ws,
