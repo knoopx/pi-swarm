@@ -29,12 +29,19 @@ function generateRequestId(): string {
   return `req-${++requestId}-${Date.now()}`;
 }
 
+interface FileCompletionItem {
+  name: string;
+  source: "file";
+  path: string;
+}
+
 interface AgentStore {
   // State
   cwd: string | null;
   agents: Agent[];
   models: ModelInfo[];
   completions: CompletionItem[];
+  fileCompletions: FileCompletionItem[];
   loading: boolean;
   error: string | null;
   connected: boolean;
@@ -52,6 +59,7 @@ interface AgentStore {
   setSelectedId: (id: string | null) => void;
   setDiff: (diff: string | null) => void;
   fetchCompletions: () => Promise<void>;
+  fetchWorkspaceFiles: (agentId?: string) => Promise<void>;
   setMaxConcurrency: (value: number) => Promise<boolean>;
 
   // WebSocket Commands
@@ -89,6 +97,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   agents: [],
   models: [],
   completions: [],
+  fileCompletions: [],
   loading: true,
   error: null,
   connected: false,
@@ -294,6 +303,18 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
       set({ completions: data?.completions || [] });
     } catch (err) {
       console.error("Failed to fetch completions:", err);
+    }
+  },
+
+  fetchWorkspaceFiles: async (agentId?: string) => {
+    try {
+      const data = await get().sendCommand<{ files: FileCompletionItem[] }>(
+        "get_workspace_files",
+        agentId ? { agentId } : {},
+      );
+      set({ fileCompletions: data?.files || [] });
+    } catch (err) {
+      console.error("Failed to fetch workspace files:", err);
     }
   },
 

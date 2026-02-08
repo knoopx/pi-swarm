@@ -35,7 +35,7 @@ export interface ApiResponse<T> {
 export interface CompletionItem {
   name: string;
   description?: string;
-  source: "extension" | "prompt" | "skill";
+  source: "extension" | "prompt" | "skill" | "file";
   location?: string;
   path?: string;
 }

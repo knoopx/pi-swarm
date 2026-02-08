@@ -9,15 +9,17 @@ import {
   CommandList,
 } from "./ui/command";
 import { cn } from "src/lib/utils";
-import { FileText, Terminal, BookOpen } from "lucide-react";
+import { FileText, Terminal, BookOpen, File } from "lucide-react";
 
 export interface CompletionItem {
   name: string;
   description?: string;
-  source: "extension" | "prompt" | "skill";
+  source: "extension" | "prompt" | "skill" | "file";
   location?: string;
   path?: string;
 }
+
+type TriggerType = "/" | "@" | null;
 
 interface CompletableTextareaProps extends Omit<
   React.ComponentProps<typeof Textarea>,
@@ -26,6 +28,7 @@ interface CompletableTextareaProps extends Omit<
   value: string;
   onChange: (value: string) => void;
   completions: CompletionItem[];
+  fileCompletions?: CompletionItem[];
   onSubmit?: () => void;
   onInterrupt?: () => void;
 }
@@ -39,6 +42,7 @@ const CompletableTextarea = React.forwardRef<
       value,
       onChange,
       completions,
+      fileCompletions = [],
       onSubmit,
       onInterrupt,
       className,
@@ -50,6 +54,8 @@ const CompletableTextarea = React.forwardRef<
     const [showCompletions, setShowCompletions] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [searchQuery, setSearchQuery] = useState("");
+    const [activeTrigger, setActiveTrigger] = useState<TriggerType>(null);
+    const [triggerPosition, setTriggerPosition] = useState(0);
     const [popupStyle, setPopupStyle] = useState<React.CSSProperties>({});
     const containerRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -68,30 +74,51 @@ const CompletableTextarea = React.forwardRef<
       [ref],
     );
 
+    // Get active completions based on trigger type
+    const activeCompletions = useMemo(() => {
+      return activeTrigger === "@" ? fileCompletions : completions;
+    }, [activeTrigger, completions, fileCompletions]);
+
     // Filter completions based on search query
     const filteredCompletions = useMemo(() => {
-      if (!searchQuery) return completions;
+      if (!searchQuery) return activeCompletions;
       const query = searchQuery.toLowerCase();
-      return completions.filter(
+      return activeCompletions.filter(
         (item) =>
           item.name.toLowerCase().includes(query) ||
           item.description?.toLowerCase().includes(query),
       );
-    }, [completions, searchQuery]);
+    }, [activeCompletions, searchQuery]);
 
-    // Check if we should show completions (when typing / at start or after newline)
-    const checkForSlashTrigger = useCallback(
+    // Check if we should show completions (when typing / at start of line or @ anywhere)
+    const checkForTrigger = useCallback(
       (text: string, cursorPos: number) => {
-        // Find the start of the current line
         const textBeforeCursor = text.slice(0, cursorPos);
+
+        // Check for @ trigger - can appear anywhere, find the last @ before cursor
+        const lastAtIndex = textBeforeCursor.lastIndexOf("@");
+        if (lastAtIndex !== -1) {
+          // Check that there's no space between @ and cursor (still typing the file path)
+          const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1);
+          if (!textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
+            setActiveTrigger("@");
+            setTriggerPosition(lastAtIndex);
+            setSearchQuery(textAfterAt);
+            setShowCompletions(true);
+            setSelectedIndex(0);
+            return true;
+          }
+        }
+
+        // Check for / trigger - must be at start of line
         const lastNewline = textBeforeCursor.lastIndexOf("\n");
         const lineStart = lastNewline + 1;
         const currentLine = textBeforeCursor.slice(lineStart);
 
-        // Check if current line starts with /
         if (currentLine.startsWith("/")) {
-          // Extract the query part (everything after /)
           const query = currentLine.slice(1);
+          setActiveTrigger("/");
+          setTriggerPosition(lineStart);
           setSearchQuery(query);
           setShowCompletions(true);
           setSelectedIndex(0);
@@ -100,9 +127,10 @@ const CompletableTextarea = React.forwardRef<
 
         setShowCompletions(false);
         setSearchQuery("");
+        setActiveTrigger(null);
         return false;
       },
-      [completions.length],
+      [completions.length, fileCompletions.length],
     );
 
     // Handle text change
@@ -111,52 +139,49 @@ const CompletableTextarea = React.forwardRef<
         const newValue = e.target.value;
         const cursorPos = e.target.selectionStart;
         onChange(newValue);
-        checkForSlashTrigger(newValue, cursorPos);
+        checkForTrigger(newValue, cursorPos);
       },
-      [onChange, checkForSlashTrigger],
+      [onChange, checkForTrigger],
     );
 
     // Handle clicking on textarea
     const handleClick = useCallback(
       (e: React.MouseEvent<HTMLTextAreaElement>) => {
         const cursorPos = e.currentTarget.selectionStart;
-        checkForSlashTrigger(value, cursorPos);
+        checkForTrigger(value, cursorPos);
       },
-      [value, checkForSlashTrigger],
+      [value, checkForTrigger],
     );
 
     // Insert completion
     const insertCompletion = useCallback(
       (item: CompletionItem) => {
         const textarea = textareaRef.current;
-        if (!textarea) return;
+        if (!textarea || !activeTrigger) return;
 
         const cursorPos = textarea.selectionStart;
-        const textBeforeCursor = value.slice(0, cursorPos);
         const textAfterCursor = value.slice(cursorPos);
 
-        // Find the start of the current line
-        const lastNewline = textBeforeCursor.lastIndexOf("\n");
-        const lineStart = lastNewline + 1;
-
-        // Replace the current line's slash command with the completion
-        const beforeLine = value.slice(0, lineStart);
-        const newValue = `${beforeLine}/${item.name} ${textAfterCursor}`;
+        // Replace from trigger position to cursor with the completion
+        const beforeTrigger = value.slice(0, triggerPosition);
+        const trigger = activeTrigger;
+        const newValue = `${beforeTrigger}${trigger}${item.name} ${textAfterCursor}`;
 
         onChange(newValue);
         setShowCompletions(false);
         setSearchQuery("");
+        setActiveTrigger(null);
 
         // Focus and set cursor position
         requestAnimationFrame(() => {
           if (textareaRef.current) {
-            const newCursorPos = lineStart + item.name.length + 2; // +2 for "/" and " "
+            const newCursorPos = triggerPosition + item.name.length + 2; // +2 for trigger and " "
             textareaRef.current.focus();
             textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
           }
         });
       },
-      [value, onChange],
+      [value, onChange, activeTrigger, triggerPosition],
     );
 
     // Handle keyboard navigation
@@ -283,6 +308,8 @@ const CompletableTextarea = React.forwardRef<
           return <FileText className="h-3.5 w-3.5" />;
         case "skill":
           return <BookOpen className="h-3.5 w-3.5" />;
+        case "file":
+          return <File className="h-3.5 w-3.5" />;
       }
     };
 
@@ -294,6 +321,8 @@ const CompletableTextarea = React.forwardRef<
           return "Prompt";
         case "skill":
           return "Skill";
+        case "file":
+          return "File";
       }
     };
 
@@ -359,7 +388,8 @@ const CompletableTextarea = React.forwardRef<
                               : "text-base05",
                           )}
                         >
-                          /{item.name}
+                          {activeTrigger}
+                          {item.name}
                         </span>
                         {item.description && (
                           <span

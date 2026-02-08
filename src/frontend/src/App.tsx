@@ -116,6 +116,7 @@ export default function App() {
     agents,
     models,
     completions,
+    fileCompletions,
     loading,
     connected,
     selectedId,
@@ -134,6 +135,7 @@ export default function App() {
     mergeAgent,
     deleteAgent,
     setMaxConcurrency,
+    fetchWorkspaceFiles,
   } = useAgentStore();
 
   const [instruction, setInstruction] = useState("");
@@ -214,6 +216,13 @@ export default function App() {
   useEffect(() => {
     connect();
   }, [connect]);
+
+  // Fetch workspace files when connected
+  useEffect(() => {
+    if (connected) {
+      fetchWorkspaceFiles();
+    }
+  }, [connected, fetchWorkspaceFiles]);
 
   const selectedAgent = agents.find((a) => a.id === selectedId);
   const isSelectedSpecAgent = selectedAgent
@@ -539,6 +548,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                 onChange={setInstruction}
                 onSubmit={handleCreate}
                 completions={completions}
+                fileCompletions={fileCompletions}
                 className="min-h-[80px] resize-none text-sm"
                 disabled={creating || refining}
               />
@@ -766,6 +776,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                             : "Send follow-up instruction..."
                       }
                       completions={completions}
+                      fileCompletions={fileCompletions}
                       models={models}
                       selectedModel={`${selectedAgent.provider}/${selectedAgent.model}`}
                       onModelChange={(value) => {
@@ -938,6 +949,7 @@ function InstructInput({
   disabled,
   placeholder = "Send follow-up instruction...",
   completions = [],
+  fileCompletions = [],
   models = [],
   selectedModel,
   onModelChange,
@@ -953,6 +965,11 @@ function InstructInput({
     source: "extension" | "prompt" | "skill";
     location?: string;
     path?: string;
+  }[];
+  fileCompletions?: {
+    name: string;
+    source: "file";
+    path: string;
   }[];
   models?: { provider: string; modelId: string; name: string }[];
   selectedModel?: string;
@@ -993,6 +1010,7 @@ function InstructInput({
         onSubmit={handleSubmit}
         onInterrupt={onInterrupt ? handleInterrupt : undefined}
         completions={completions}
+        fileCompletions={fileCompletions}
         className="min-h-[44px] resize-none text-sm flex-1"
         rows={1}
         disabled={disabled}

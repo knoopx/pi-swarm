@@ -137,6 +137,29 @@ async function initResourceLoader() {
   }
 }
 
+// Get workspace files (respects .gitignore)
+async function getWorkspaceFiles(workspace: string): Promise<
+  Array<{
+    name: string;
+    source: "file";
+    path: string;
+  }>
+> {
+  try {
+    // Use git ls-files which respects .gitignore
+    const result =
+      await Bun.$`cd ${workspace} && git ls-files --cached --others --exclude-standard 2>/dev/null || find . -type f -not -path '*/node_modules/*' -not -path '*/.git/*' | sed 's|^./||'`.quiet();
+    const files = result.stdout.toString().split("\n").filter(Boolean);
+    return files.map((file) => ({
+      name: file,
+      source: "file" as const,
+      path: file,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 // Get available completions (commands, skills, prompts)
 function getCompletions(): Array<{
   name: string;
@@ -750,6 +773,17 @@ async function handleWsCommand(
       case "get_completions": {
         const completions = getCompletions();
         sendResponse(ws, id, true, { completions });
+        break;
+      }
+
+      case "get_workspace_files": {
+        const agentId = message.agentId as string | undefined;
+        // Use agent workspace if specified, otherwise use base path
+        const workspace = agentId
+          ? agents.get(agentId)?.workspace || BASE_PATH
+          : BASE_PATH;
+        const files = await getWorkspaceFiles(workspace);
+        sendResponse(ws, id, true, { files });
         break;
       }
 
