@@ -232,44 +232,11 @@ export default function App() {
   const runningCount = agents.filter((a) => a.status === "running").length;
 
   // Auto-refresh diff when modified files change
-  const prevModifiedFilesRef = useRef<string | null>(null);
-  const diffRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-
   useEffect(() => {
     if (!selectedAgent) return;
 
-    // Create a stable key from modifiedFiles to detect changes
-    const modifiedFilesKey = selectedAgent.modifiedFiles?.join(",") ?? "";
-
-    // Only refresh if files actually changed (not just on first render)
-    if (
-      prevModifiedFilesRef.current !== null &&
-      prevModifiedFilesRef.current !== modifiedFilesKey
-    ) {
-      // Debounce the diff refresh
-      if (diffRefreshTimeoutRef.current) {
-        clearTimeout(diffRefreshTimeoutRef.current);
-      }
-      diffRefreshTimeoutRef.current = setTimeout(() => {
-        getDiff(selectedAgent.id);
-      }, 300);
-    }
-
-    prevModifiedFilesRef.current = modifiedFilesKey;
-
-    return () => {
-      if (diffRefreshTimeoutRef.current) {
-        clearTimeout(diffRefreshTimeoutRef.current);
-      }
-    };
+    getDiff(selectedAgent.id);
   }, [selectedAgent?.modifiedFiles, selectedAgent?.id, getDiff]);
-
-  // Reset tracking when switching agents
-  useEffect(() => {
-    prevModifiedFilesRef.current = null;
-  }, [selectedId]);
 
   // Count changed files from diff
   const changedFilesCount = useMemo(() => {
