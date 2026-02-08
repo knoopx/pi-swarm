@@ -116,3 +116,92 @@
 .d2h-diff-tbody tr {
   border-color: var(--base02) !important;
 }
+
+/* highlight.js base16 theme */
+.hljs {
+  background: var(--base01);
+  color: var(--base05);
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: var(--base03);
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-meta {
+  color: var(--base0E);
+}
+
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+  color: var(--base0B);
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-variable.constant_,
+.hljs-attr {
+  color: var(--base09);
+}
+
+.hljs-title,
+.hljs-title.function_,
+.hljs-section {
+  color: var(--base0D);
+}
+
+.hljs-type,
+.hljs-title.class_,
+.hljs-built_in {
+  color: var(--base0A);
+}
+
+.hljs-name,
+.hljs-tag,
+.hljs-attribute {
+  color: var(--base08);
+}
+
+.hljs-variable,
+.hljs-template-variable {
+  color: var(--base08);
+}
+
+.hljs-regexp,
+.hljs-link {
+  color: var(--base0C);
+}
+
+.hljs-deletion {
+  color: var(--base08);
+}
+
+.hljs-punctuation,
+.hljs-operator {
+  color: var(--base05);
+}
+
+.hljs-params {
+  color: var(--base05);
+}
+
+.hljs-property {
+  color: var(--base0C);
+}
+
+.hljs-subst {
+  color: var(--base05);
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}

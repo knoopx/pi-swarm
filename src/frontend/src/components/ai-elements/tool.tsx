@@ -109,7 +109,7 @@ const getFirstParamPreview = (input: ToolPart["input"]): string | null => {
   if (entries.length === 0) return null;
   const [, value] = entries[0];
   if (typeof value === "string") {
-    return value.length > 60 ? `${value.slice(0, 60)}…` : value;
+    return value.length > 120 ? `${value.slice(0, 120)}…` : value;
   }
   return null;
 };

@@ -219,18 +219,10 @@ function sendResponse(
   ws.send(JSON.stringify(response));
 }
 
-async function createWorkspace(
-  basePath: string,
-  id: string,
-  instruction: string,
-): Promise<string> {
+async function createWorkspace(basePath: string, id: string): Promise<string> {
   const workspace = buildWorkspacePath(basePath, id);
   await Bun.$`mkdir -p ${basePath}/.pi/swarm/workspaces`.quiet();
   await Bun.$`cd ${basePath} && jj workspace add ${workspace} --name ${id}`.quiet();
-  // Create a new change with the user's instruction as description
-  if (instruction) {
-    await Bun.$`cd ${workspace} && jj new -m ${instruction}`.quiet();
-  }
   return workspace;
 }
 
@@ -353,6 +345,11 @@ async function startAgent(agent: Agent): Promise<void> {
   agent.output = "";
   await createAgentSessionAndSubscribe(agent);
 
+  // Set the change description after session is created (avoids double changes)
+  if (agent.instruction) {
+    await Bun.$`cd ${agent.workspace} && jj desc -m ${agent.instruction}`.quiet();
+  }
+
   console.log(
     `[Agent ${agent.id}] Starting with instruction:`,
     agent.instruction.substring(0, 200),
@@ -392,7 +389,8 @@ async function instructAgent(agent: Agent, instruction: string): Promise<void> {
 
   switch (action) {
     case "continue_active":
-      // Active session - send prompt directly
+      // Active session - create new change and send prompt
+      await Bun.$`cd ${agent.workspace} && jj new -m ${instruction}`.quiet();
       agent.status = "running";
       agent.instruction = instruction;
       agent.session!.prompt(instruction).catch((err) => {
@@ -401,7 +399,8 @@ async function instructAgent(agent: Agent, instruction: string): Promise<void> {
       break;
 
     case "resume_session":
-      // Stopped agent - resume with session history
+      // Stopped agent - create new change and resume with session history
+      await Bun.$`cd ${agent.workspace} && jj new -m ${instruction}`.quiet();
       agent.instruction = instruction;
       await resumeAgent(agent, instruction);
       return; // resumeAgent handles broadcast/save
@@ -433,6 +432,9 @@ async function interruptAgent(
   agent.output +=
     JSON.stringify({ type: "interrupt", message: "Interrupted by user" }) +
     "\n";
+
+  // Create new change for the interrupt instruction
+  await Bun.$`cd ${agent.workspace} && jj new -m ${instruction}`.quiet();
 
   // Resume with the new steering instruction
   await createAgentSessionAndSubscribe(agent, { resume: true });
@@ -519,11 +521,7 @@ async function handleWsCommand(
       case "create_agent": {
         const agentId = generateId();
         const instruction = (message.instruction as string) || "";
-        const workspace = await createWorkspace(
-          BASE_PATH,
-          agentId,
-          instruction,
-        );
+        const workspace = await createWorkspace(BASE_PATH, agentId);
 
         let { provider, model: modelId } = message as {
           provider?: string;

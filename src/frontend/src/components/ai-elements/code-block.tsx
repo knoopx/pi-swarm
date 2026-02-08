@@ -49,12 +49,12 @@ export const CodeBlock = ({
   return (
     <div
       className={cn(
-        "relative w-full overflow-hidden rounded-md bg-[#0d1117] text-[#e6edf3]",
+        "relative w-full overflow-hidden rounded-md bg-base01 text-base05",
         className,
       )}
       {...props}
     >
-      <pre className="overflow-auto p-3 text-xs">
+      <pre className="hljs overflow-auto p-3 text-xs">
         <code
           className={cn("font-mono", showLineNumbers && "pl-8")}
           dangerouslySetInnerHTML={{ __html: highlighted }}
