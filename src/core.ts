@@ -88,14 +88,21 @@ export function parseModelString(
   };
 }
 
-export function mapModelsToInfo(
-  models: Array<{ provider: string; id: string }>,
-): ModelInfo[] {
-  return models.map((model) => ({
+export function formatModelInfo(model: {
+  provider: string;
+  id: string;
+}): ModelInfo {
+  return {
     provider: model.provider,
     modelId: model.id,
     name: formatModelName(model.provider, model.id),
-  }));
+  };
+}
+
+export function mapModelsToInfo(
+  models: Array<{ provider: string; id: string }>,
+): ModelInfo[] {
+  return models.map(formatModelInfo);
 }
 
 export function findPreferredModel<T extends { id: string }>(

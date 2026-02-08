@@ -1,6 +1,16 @@
 // Server business logic - extracted for testability
 
-import { serializeAgent, type Agent } from "./core";
+import {
+  serializeAgent,
+  formatModelInfo,
+  mapModelsToInfo,
+  type Agent,
+  type ModelInfo,
+} from "./core";
+
+// Re-export model utilities for backwards compatibility
+export { formatModelInfo, type ModelInfo };
+export { mapModelsToInfo as formatModelsInfo };
 
 // WebSocket message types
 export interface WsRequest {
@@ -19,12 +29,6 @@ export interface WsResponse {
 
 export interface WsClient {
   send: (data: string) => void;
-}
-
-export interface ModelInfo {
-  provider: string;
-  modelId: string;
-  name: string;
 }
 
 // Response formatting
@@ -46,24 +50,6 @@ export function formatBroadcastEvent(event: {
   [key: string]: unknown;
 }): string {
   return JSON.stringify(event);
-}
-
-// Model formatting
-export function formatModelInfo(model: {
-  provider: string;
-  id: string;
-}): ModelInfo {
-  return {
-    provider: model.provider,
-    modelId: model.id,
-    name: `${model.provider}/${model.id}`,
-  };
-}
-
-export function formatModelsInfo(
-  models: Array<{ provider: string; id: string }>,
-): ModelInfo[] {
-  return models.map(formatModelInfo);
 }
 
 // Init message formatting

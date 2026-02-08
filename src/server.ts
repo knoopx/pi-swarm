@@ -13,18 +13,23 @@ import {
 import { getModel, type Model, type Api } from "@mariozechner/pi-ai";
 import { join } from "path";
 import {
-  generateId,
   nowTs,
   serializeAgent,
-  buildWorkspacePath,
-  buildAgentSessionDir,
-  buildAgentMetadataPath,
-  buildSessionsDir,
   determineAgentAction,
   getMergeDescription,
   validateMerge,
   type Agent as CoreAgent,
 } from "./core";
+import { dispatchCommand, type HandlerContext } from "./ws-handlers";
+import { createPersistence } from "./persistence";
+import {
+  createWorkspace,
+  getWorkspaceFiles,
+  getModifiedFiles,
+  getDiffStat,
+  getDiff,
+  setOrCreateChange,
+} from "./workspace";
 
 // Types - extend core Agent with session
 interface Agent extends CoreAgent {
@@ -37,14 +42,6 @@ interface WsRequest {
   id: string; // Request ID for response correlation
   type: string;
   [key: string]: unknown;
-}
-
-interface WsResponse {
-  id: string; // Correlation ID
-  type: "response";
-  success: boolean;
-  data?: unknown;
-  error?: string;
 }
 
 // State
@@ -91,61 +88,22 @@ const FRONTEND_DIST =
 const AGENT_DIR = join(process.env.HOME || "~", ".pi", "agent");
 const IS_DEV = !existsSync(join(FRONTEND_DIST, "index.html"));
 const VITE_DEV_SERVER = "http://localhost:3000";
-const SESSIONS_DIR = buildSessionsDir(BASE_PATH);
 
-// Per-agent session directory helpers (using core functions)
-function getAgentSessionDir(agentId: string): string {
-  return buildAgentSessionDir(BASE_PATH, agentId);
-}
+// Initialize persistence module
+const persistence = createPersistence({ basePath: BASE_PATH });
+const {
+  getAgentSessionDir,
+  ensureSessionDir,
+  saveAgent,
+  deleteAgentSession,
+  loadAgents: loadAgentsFromDisk,
+} = persistence;
 
-function getAgentMetadataPath(agentId: string): string {
-  return buildAgentMetadataPath(BASE_PATH, agentId);
-}
-
-// Persistence helpers
-async function ensureSessionDir(agentId: string) {
-  const dir = getAgentSessionDir(agentId);
-  if (!existsSync(dir)) {
-    await Bun.$`mkdir -p ${dir}`.quiet();
-  }
-}
-
-async function saveAgent(agent: Agent) {
-  await ensureSessionDir(agent.id);
-  const metadataPath = getAgentMetadataPath(agent.id);
-  await Bun.write(metadataPath, JSON.stringify(serializeAgent(agent), null, 2));
-}
-
-async function deleteAgentSession(agentId: string) {
-  const dir = getAgentSessionDir(agentId);
-  if (existsSync(dir)) {
-    await Bun.$`rm -rf ${dir}`.quiet();
-  }
-}
-
-async function loadAgents() {
-  try {
-    if (!existsSync(SESSIONS_DIR)) {
-      return;
-    }
-
-    const entries = await Bun.$`ls -1 ${SESSIONS_DIR}`.quiet();
-    const agentIds = entries.stdout.toString().split("\n").filter(Boolean);
-
-    for (const agentId of agentIds) {
-      const metadataPath = getAgentMetadataPath(agentId);
-      if (existsSync(metadataPath)) {
-        const agentData = await Bun.file(metadataPath).json();
-        // Reset running agents to stopped on restart
-        if (agentData.status === "running") {
-          agentData.status = "stopped";
-        }
-        agents.set(agentData.id, agentData);
-      }
-    }
-    console.log(`📂 Loaded ${agents.size} agents from ${SESSIONS_DIR}`);
-  } catch (err) {
-    console.error("Failed to load agents:", err);
+// Load agents from disk into memory
+async function loadAgents(): Promise<void> {
+  const loaded = await loadAgentsFromDisk();
+  for (const [id, agent] of loaded) {
+    agents.set(id, agent as Agent);
   }
 }
 
@@ -166,29 +124,6 @@ async function initResourceLoader() {
     console.log("📚 Resource loader initialized");
   } catch (err) {
     console.error("Failed to initialize resource loader:", err);
-  }
-}
-
-// Get workspace files (respects .gitignore)
-async function getWorkspaceFiles(workspace: string): Promise<
-  Array<{
-    name: string;
-    source: "file";
-    path: string;
-  }>
-> {
-  try {
-    // Use git ls-files which respects .gitignore
-    const result =
-      await Bun.$`cd ${workspace} && git ls-files --cached --others --exclude-standard 2>/dev/null || find . -type f -not -path '*/node_modules/*' -not -path '*/.git/*' | sed 's|^./||'`.quiet();
-    const files = result.stdout.toString().split("\n").filter(Boolean);
-    return files.map((file) => ({
-      name: file,
-      source: "file" as const,
-      path: file,
-    }));
-  } catch {
-    return [];
   }
 }
 
@@ -266,88 +201,6 @@ async function updateAndPersistAgent(agent: Agent) {
   agent.updatedAt = nowTs();
   broadcastAgentUpdate(agent);
   await saveAgent(agent);
-}
-
-function sendResponse(
-  ws: { send: (data: string) => void },
-  id: string,
-  success: boolean,
-  data?: unknown,
-  error?: string,
-) {
-  const response: WsResponse = { id, type: "response", success, data, error };
-  ws.send(JSON.stringify(response));
-}
-
-async function createWorkspace(
-  basePath: string,
-  id: string,
-  instruction: string,
-): Promise<string> {
-  const workspace = buildWorkspacePath(basePath, id);
-  await Bun.$`mkdir -p ${basePath}/.pi/swarm/workspaces`.quiet();
-  // Use -r default@ to make the new workspace's change descend from the default workspace's current change
-  // Without this, the new workspace would be a sibling (same parent) instead of a child
-  await Bun.$`cd ${basePath} && jj workspace add ${workspace} --name ${id} -m ${instruction} -r default@`.quiet();
-  return workspace;
-}
-
-async function getModifiedFiles(workspace: string): Promise<string[]> {
-  try {
-    // Compare agent workspace against default workspace to show all changes made by the agent
-    const result =
-      await Bun.$`cd ${workspace} && jj diff --name-only --from default@ --to @`.quiet();
-    return result.stdout.toString().split("\n").filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
-async function getDiffStat(workspace: string): Promise<string> {
-  try {
-    // Compare agent workspace against default workspace to show all changes made by the agent
-    const result =
-      await Bun.$`cd ${workspace} && jj diff --stat --from default@ --to @`.quiet();
-    return result.stdout.toString();
-  } catch {
-    return "";
-  }
-}
-
-async function getDiff(workspace: string): Promise<string> {
-  try {
-    // Compare agent workspace against default workspace to show all changes made by the agent
-    const result =
-      await Bun.$`cd ${workspace} && jj diff --git --from default@ --to @`.quiet();
-    return result.stdout.toString();
-  } catch {
-    return "";
-  }
-}
-
-async function isCurrentChangeEmpty(workspace: string): Promise<boolean> {
-  try {
-    // Check if the current change (@) has any file modifications
-    const result =
-      await Bun.$`cd ${workspace} && jj log -r @ --no-graph -T 'if(empty, "empty", "has-changes")'`.quiet();
-    return result.stdout.toString().trim() === "empty";
-  } catch {
-    return false;
-  }
-}
-
-async function setOrCreateChange(
-  workspace: string,
-  instruction: string,
-): Promise<void> {
-  const isEmpty = await isCurrentChangeEmpty(workspace);
-  if (isEmpty) {
-    // Re-use current change and update its description
-    await Bun.$`cd ${workspace} && jj describe -m ${instruction}`.quiet();
-  } else {
-    // Create a new change
-    await Bun.$`cd ${workspace} && jj new -m ${instruction}`.quiet();
-  }
 }
 
 function getDefaultModel(): {
@@ -671,241 +524,43 @@ async function mergeAgent(
   }
 }
 
+// Handler context for WebSocket command dispatcher
+function createHandlerContext(): HandlerContext<Agent> {
+  return {
+    agents,
+    basePath: BASE_PATH,
+    maxConcurrency,
+    setMaxConcurrency: (value: number) => {
+      maxConcurrency = value;
+    },
+    broadcast,
+    saveAgent,
+    createWorkspace,
+    getDefaultModel,
+    startAgent,
+    stopAgent,
+    resumeAgent,
+    instructAgent,
+    interruptAgent,
+    setAgentModel,
+    deleteAgent,
+    mergeAgent,
+    getDiff,
+    getModifiedFiles,
+    getDiffStat,
+    getCompletions,
+    getWorkspaceFiles,
+    tryStartNextPending,
+  };
+}
+
 // WebSocket command handler
 async function handleWsCommand(
   ws: { send: (data: string) => void },
   message: WsRequest,
 ): Promise<void> {
-  const { id, type } = message;
-
-  try {
-    switch (type) {
-      case "create_agent": {
-        const agentId = generateId();
-        const instruction = (message.instruction as string) || "";
-        const workspace = await createWorkspace(
-          BASE_PATH,
-          agentId,
-          instruction,
-        );
-
-        let { provider, model: modelId } = message as {
-          provider?: string;
-          model?: string;
-        };
-        if (!provider || !modelId) {
-          const defaultModel = getDefaultModel();
-          provider = provider || defaultModel.provider;
-          modelId = modelId || defaultModel.modelId;
-        }
-
-        const agent: Agent = {
-          id: agentId,
-          name: (message.name as string) || "unnamed",
-          status: "pending",
-          instruction,
-          workspace,
-          basePath: BASE_PATH,
-          createdAt: nowTs(),
-          updatedAt: nowTs(),
-          output: "",
-          modifiedFiles: [],
-          diffStat: "",
-          provider,
-          model: modelId,
-        };
-
-        agents.set(agentId, agent);
-        broadcast({ type: "agent_created", agent: serializeAgent(agent) });
-        await saveAgent(agent);
-        sendResponse(ws, id, true, serializeAgent(agent));
-        break;
-      }
-
-      case "start_agent": {
-        const agent = agents.get(message.agentId as string);
-        if (!agent) {
-          sendResponse(ws, id, false, undefined, "Agent not found");
-          return;
-        }
-        await startAgent(agent);
-        sendResponse(ws, id, true, serializeAgent(agent));
-        break;
-      }
-
-      case "stop_agent": {
-        const agent = agents.get(message.agentId as string);
-        if (!agent) {
-          sendResponse(ws, id, false, undefined, "Agent not found");
-          return;
-        }
-        await stopAgent(agent);
-        sendResponse(ws, id, true, serializeAgent(agent));
-        break;
-      }
-
-      case "resume_agent": {
-        const agent = agents.get(message.agentId as string);
-        if (!agent) {
-          sendResponse(ws, id, false, undefined, "Agent not found");
-          return;
-        }
-        if (agent.status !== "stopped") {
-          sendResponse(
-            ws,
-            id,
-            false,
-            undefined,
-            "Agent must be stopped to resume",
-          );
-          return;
-        }
-        const instruction =
-          (message.instruction as string) ||
-          "Continue where you left off. Review what you've done so far and complete the remaining work.";
-        await resumeAgent(agent, instruction);
-        sendResponse(ws, id, true, serializeAgent(agent));
-        break;
-      }
-
-      case "instruct_agent": {
-        const agent = agents.get(message.agentId as string);
-        if (!agent) {
-          sendResponse(ws, id, false, undefined, "Agent not found");
-          return;
-        }
-        await instructAgent(agent, message.instruction as string, {
-          queue: message.queue as boolean,
-        });
-        sendResponse(ws, id, true, serializeAgent(agent));
-        break;
-      }
-
-      case "interrupt_agent": {
-        const agent = agents.get(message.agentId as string);
-        if (!agent) {
-          sendResponse(ws, id, false, undefined, "Agent not found");
-          return;
-        }
-        if (agent.status !== "running") {
-          sendResponse(ws, id, false, undefined, "Agent is not running");
-          return;
-        }
-        await interruptAgent(agent, message.instruction as string);
-        sendResponse(ws, id, true, serializeAgent(agent));
-        break;
-      }
-
-      case "set_model": {
-        const agent = agents.get(message.agentId as string);
-        if (!agent) {
-          sendResponse(ws, id, false, undefined, "Agent not found");
-          return;
-        }
-        await setAgentModel(
-          agent,
-          message.provider as string,
-          message.model as string,
-        );
-        sendResponse(ws, id, true, serializeAgent(agent));
-        break;
-      }
-
-      case "get_diff": {
-        const agent = agents.get(message.agentId as string);
-        if (!agent) {
-          sendResponse(ws, id, false, undefined, "Agent not found");
-          return;
-        }
-        const diff = await getDiff(agent.workspace);
-        sendResponse(ws, id, true, { diff });
-        break;
-      }
-
-      case "merge_agent": {
-        const agent = agents.get(message.agentId as string);
-        if (!agent) {
-          sendResponse(ws, id, false, undefined, "Agent not found");
-          return;
-        }
-        const result = await mergeAgent(agent);
-        if (result.success) {
-          sendResponse(ws, id, true, { message: "Changes merged" });
-        } else {
-          sendResponse(ws, id, false, undefined, result.error);
-        }
-        break;
-      }
-
-      case "delete_agent": {
-        const agent = agents.get(message.agentId as string);
-        if (!agent) {
-          sendResponse(ws, id, false, undefined, "Agent not found");
-          return;
-        }
-        await deleteAgent(agent);
-        sendResponse(ws, id, true);
-        break;
-      }
-
-      case "fetch_agent": {
-        const agent = agents.get(message.agentId as string);
-        if (!agent) {
-          sendResponse(ws, id, false, undefined, "Agent not found");
-          return;
-        }
-        const agentData = {
-          ...serializeAgent(agent),
-          modifiedFiles: await getModifiedFiles(agent.workspace),
-          diffStat: await getDiffStat(agent.workspace),
-        };
-        sendResponse(ws, id, true, agentData);
-        break;
-      }
-
-      case "get_completions": {
-        const completions = getCompletions();
-        sendResponse(ws, id, true, { completions });
-        break;
-      }
-
-      case "get_workspace_files": {
-        const agentId = message.agentId as string | undefined;
-        // Use agent workspace if specified, otherwise use base path
-        const workspace = agentId
-          ? agents.get(agentId)?.workspace || BASE_PATH
-          : BASE_PATH;
-        const files = await getWorkspaceFiles(workspace);
-        sendResponse(ws, id, true, { files });
-        break;
-      }
-
-      case "set_max_concurrency": {
-        const value = message.maxConcurrency as number;
-        if (typeof value === "number" && value >= 1 && value <= 10) {
-          maxConcurrency = value;
-          broadcast({ type: "max_concurrency_changed", maxConcurrency });
-          sendResponse(ws, id, true, { maxConcurrency });
-          // Try to start pending agents if concurrency increased
-          await tryStartNextPending();
-        } else {
-          sendResponse(
-            ws,
-            id,
-            false,
-            undefined,
-            "Invalid concurrency value (must be 1-10)",
-          );
-        }
-        break;
-      }
-
-      default:
-        sendResponse(ws, id, false, undefined, `Unknown command: ${type}`);
-    }
-  } catch (err) {
-    sendResponse(ws, id, false, undefined, String(err));
-  }
+  const ctx = createHandlerContext();
+  await dispatchCommand(ctx, ws, message);
 }
 
 // Dev proxy helper
