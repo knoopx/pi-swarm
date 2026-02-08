@@ -650,7 +650,8 @@ async function mergeAgent(
     console.log(
       `[mergeAgent] Rebasing agent ${agent.id} onto default@, description: "${description}"`,
     );
-    await Bun.$`cd ${agent.workspace} && jj rebase -r @ --onto default@`.quiet();
+    // Use -b to rebase all changes in the feature workspace branch, not just the current revision
+    await Bun.$`cd ${agent.workspace} && jj rebase -b @ -d default@`.quiet();
 
     // Get the change ID of the rebased change and switch the default workspace to it
     const changeIdResult =
