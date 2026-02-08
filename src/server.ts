@@ -527,6 +527,10 @@ async function mergeAgent(
   // Validate agent can be merged
   const validation = validateMerge(agent);
   if (!validation.valid) {
+    console.error(
+      `[mergeAgent] Validation failed for agent ${agent.id}:`,
+      validation.error,
+    );
     return { success: false, error: validation.error };
   }
 
@@ -540,10 +544,16 @@ async function mergeAgent(
       agent.instruction,
     );
 
-    await Bun.$`cd ${agent.workspace} && jj rebase -r ${cid} --onto default@`.quiet();
+    console.log(
+      `[mergeAgent] Rebasing agent ${agent.id} onto default@, description: "${description}"`,
+    );
+    await Bun.$`cd ${agent.workspace} && jj rebase -r @ --onto default@`.quiet();
+    console.log(`[mergeAgent] Successfully merged agent ${agent.id}`);
     return { success: true };
   } catch (e) {
-    return { success: false, error: String(e) };
+    const error = e instanceof Error ? e.message : String(e);
+    console.error(`[mergeAgent] Failed to merge agent ${agent.id}:`, error);
+    return { success: false, error };
   }
 }
 
