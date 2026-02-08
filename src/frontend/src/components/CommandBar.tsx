@@ -23,6 +23,41 @@ import {
   Zap,
 } from "lucide-react";
 import type { Agent } from "../types";
+import type { LucideIcon } from "lucide-react";
+
+function AgentGroup({
+  heading,
+  agents,
+  icon: Icon,
+  iconClassName,
+  onSelect,
+  showStatus,
+}: {
+  heading: string;
+  agents: Agent[];
+  icon: LucideIcon;
+  iconClassName?: string;
+  onSelect: (id: string) => void;
+  showStatus?: boolean;
+}) {
+  if (agents.length === 0) return null;
+
+  return (
+    <CommandGroup heading={heading}>
+      {agents.map((agent) => (
+        <CommandItem key={agent.id} onSelect={() => onSelect(agent.id)}>
+          <Icon className={`mr-2 h-4 w-4 ${iconClassName ?? ""}`} />
+          <span className="truncate flex-1">{agent.name}</span>
+          {showStatus && (
+            <span className="text-xs text-muted-foreground capitalize">
+              {agent.status}
+            </span>
+          )}
+        </CommandItem>
+      ))}
+    </CommandGroup>
+  );
+}
 
 interface CommandBarProps {
   open: boolean;
@@ -179,67 +214,36 @@ export function CommandBar({
 
         <CommandSeparator />
 
-        {/* Running Agents - Priority */}
-        {agentsByStatus.running.length > 0 && (
-          <CommandGroup heading="Running">
-            {agentsByStatus.running.map((agent) => (
-              <CommandItem
-                key={agent.id}
-                onSelect={() => runCallback(() => onSelectAgent(agent.id))}
-              >
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                <span className="truncate flex-1">{agent.name}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
+        <AgentGroup
+          heading="Running"
+          agents={agentsByStatus.running}
+          icon={RefreshCw}
+          iconClassName="animate-spin"
+          onSelect={(id) => runCallback(() => onSelectAgent(id))}
+        />
 
-        {/* Waiting */}
-        {agentsByStatus.waiting.length > 0 && (
-          <CommandGroup heading="Waiting">
-            {agentsByStatus.waiting.map((agent) => (
-              <CommandItem
-                key={agent.id}
-                onSelect={() => runCallback(() => onSelectAgent(agent.id))}
-              >
-                <MessageSquare className="mr-2 h-4 w-4" />
-                <span className="truncate flex-1">{agent.name}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
+        <AgentGroup
+          heading="Waiting"
+          agents={agentsByStatus.waiting}
+          icon={MessageSquare}
+          onSelect={(id) => runCallback(() => onSelectAgent(id))}
+        />
 
-        {/* Pending */}
-        {agentsByStatus.pending.length > 0 && (
-          <CommandGroup heading="Pending">
-            {agentsByStatus.pending.map((agent) => (
-              <CommandItem
-                key={agent.id}
-                onSelect={() => runCallback(() => onSelectAgent(agent.id))}
-              >
-                <Zap className="mr-2 h-4 w-4" />
-                <span className="truncate flex-1">{agent.name}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
+        <AgentGroup
+          heading="Pending"
+          agents={agentsByStatus.pending}
+          icon={Zap}
+          onSelect={(id) => runCallback(() => onSelectAgent(id))}
+        />
 
-        {/* Search Results */}
-        {search && filteredAgents.length > 0 && (
-          <CommandGroup heading="Search Results">
-            {filteredAgents.map((agent) => (
-              <CommandItem
-                key={agent.id}
-                onSelect={() => runCallback(() => onSelectAgent(agent.id))}
-              >
-                <FileCode className="mr-2 h-4 w-4" />
-                <span className="truncate flex-1">{agent.name}</span>
-                <span className="text-xs text-muted-foreground capitalize">
-                  {agent.status}
-                </span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+        {search && (
+          <AgentGroup
+            heading="Search Results"
+            agents={filteredAgents}
+            icon={FileCode}
+            onSelect={(id) => runCallback(() => onSelectAgent(id))}
+            showStatus
+          />
         )}
       </CommandList>
     </CommandDialog>

@@ -163,6 +163,55 @@ const typeColors = {
   question: "bg-base09/20 text-base09 border-base09/30",
 };
 
+function InlineComment({
+  comment,
+  onRemove,
+  className = "ml-12 mr-2",
+}: {
+  comment: ReviewComment;
+  onRemove: (id: string) => void;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`${className} my-1 p-2 rounded border ${typeColors[comment.type]}`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm">{comment.comment}</p>
+        <button
+          onClick={() => onRemove(comment.id)}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function InlineCommentsList({
+  comments,
+  onRemove,
+  className,
+}: {
+  comments: ReviewComment[];
+  onRemove: (id: string) => void;
+  className?: string;
+}) {
+  return (
+    <>
+      {comments.map((c) => (
+        <InlineComment
+          key={c.id}
+          comment={c}
+          onRemove={onRemove}
+          className={className}
+        />
+      ))}
+    </>
+  );
+}
+
 type ViewMode = "unified" | "split";
 
 export function ReviewMode({
@@ -495,22 +544,10 @@ function UnifiedView({
               )}
             </div>
 
-            {lineComments.map((c) => (
-              <div
-                key={c.id}
-                className={`ml-12 mr-2 my-1 p-2 rounded border ${typeColors[c.type]}`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm">{c.comment}</p>
-                  <button
-                    onClick={() => removeComment(c.id)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-            ))}
+            <InlineCommentsList
+              comments={lineComments}
+              onRemove={removeComment}
+            />
 
             {isActive && (
               <CommentInput
@@ -652,40 +689,18 @@ function SplitView({
             </div>
 
             {/* Comments for left side */}
-            {leftComments.map((c) => (
-              <div
-                key={c.id}
-                className={`ml-10 mr-2 my-1 p-2 rounded border ${typeColors[c.type]}`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm">{c.comment}</p>
-                  <button
-                    onClick={() => removeComment(c.id)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-            ))}
+            <InlineCommentsList
+              comments={leftComments}
+              onRemove={removeComment}
+              className="ml-10 mr-2"
+            />
 
             {/* Comments for right side */}
-            {rightComments.map((c) => (
-              <div
-                key={c.id}
-                className={`ml-10 mr-2 my-1 p-2 rounded border ${typeColors[c.type]}`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm">{c.comment}</p>
-                  <button
-                    onClick={() => removeComment(c.id)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-            ))}
+            <InlineCommentsList
+              comments={rightComments}
+              onRemove={removeComment}
+              className="ml-10 mr-2"
+            />
 
             {isLeftActive && (
               <CommentInput
