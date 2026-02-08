@@ -889,6 +889,15 @@ function InstructInput({
 
   return (
     <div className="flex gap-2 items-end">
+      {models.length > 0 && selectedModel && onModelChange && (
+        <ModelSelector
+          models={models}
+          value={selectedModel}
+          onChange={onModelChange}
+          disabled={modelDisabled}
+          className="h-[44px] w-[160px]"
+        />
+      )}
       <CompletableTextarea
         placeholder={placeholder}
         value={value}
@@ -900,15 +909,6 @@ function InstructInput({
         rows={1}
         disabled={disabled}
       />
-      {models.length > 0 && selectedModel && onModelChange && (
-        <ModelSelector
-          models={models}
-          value={selectedModel}
-          onChange={onModelChange}
-          disabled={modelDisabled}
-          className="h-[44px] w-[160px]"
-        />
-      )}
       {onInterrupt && (
         <Tooltip>
           <TooltipTrigger asChild>
