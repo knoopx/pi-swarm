@@ -82,7 +82,7 @@ const statusConfig: Record<
   },
   waiting: {
     variant: "default",
-    label: "Awaiting Review",
+    label: "Waiting",
     icon: <AlertCircle className="h-3 w-3" />,
     description: "Ready for your review",
   },

@@ -330,30 +330,62 @@ const CompletableTextarea = React.forwardRef<
               <CommandList>
                 <CommandEmpty>No completions found</CommandEmpty>
                 <CommandGroup>
-                  {filteredCompletions.map((item, index) => (
-                    <CommandItem
-                      key={`${item.source}-${item.name}`}
-                      data-index={index}
-                      onSelect={() => insertCompletion(item)}
-                      className={cn(
-                        "flex items-center gap-2 cursor-pointer",
-                        index === selectedIndex && "bg-accent",
-                      )}
-                    >
-                      <span className="text-muted-foreground">
-                        {getIcon(item.source)}
-                      </span>
-                      <span className="font-mono text-sm">/{item.name}</span>
-                      {item.description && (
-                        <span className="text-xs text-muted-foreground truncate flex-1">
-                          {item.description}
+                  {filteredCompletions.map((item, index) => {
+                    const isSelected = index === selectedIndex;
+                    return (
+                      <CommandItem
+                        key={`${item.source}-${item.name}`}
+                        data-index={index}
+                        onSelect={() => insertCompletion(item)}
+                        className={cn(
+                          "flex items-center gap-2 cursor-pointer",
+                          isSelected && "bg-accent",
+                        )}
+                      >
+                        <span
+                          className={
+                            isSelected
+                              ? "text-accent-foreground"
+                              : "text-base0D"
+                          }
+                        >
+                          {getIcon(item.source)}
                         </span>
-                      )}
-                      <span className="text-[10px] text-muted-foreground/60 uppercase">
-                        {getSourceLabel(item.source)}
-                      </span>
-                    </CommandItem>
-                  ))}
+                        <span
+                          className={cn(
+                            "font-mono text-sm",
+                            isSelected
+                              ? "text-accent-foreground"
+                              : "text-base05",
+                          )}
+                        >
+                          /{item.name}
+                        </span>
+                        {item.description && (
+                          <span
+                            className={cn(
+                              "text-xs truncate flex-1",
+                              isSelected
+                                ? "text-accent-foreground"
+                                : "text-base04",
+                            )}
+                          >
+                            {item.description}
+                          </span>
+                        )}
+                        <span
+                          className={cn(
+                            "text-[10px] uppercase",
+                            isSelected
+                              ? "text-accent-foreground"
+                              : "text-base03",
+                          )}
+                        >
+                          {getSourceLabel(item.source)}
+                        </span>
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               </CommandList>
             </Command>

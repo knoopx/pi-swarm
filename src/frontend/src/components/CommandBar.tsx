@@ -194,9 +194,9 @@ export function CommandBar({
           </CommandGroup>
         )}
 
-        {/* Awaiting Review */}
+        {/* Waiting */}
         {agentsByStatus.waiting.length > 0 && (
-          <CommandGroup heading="Awaiting Review">
+          <CommandGroup heading="Waiting">
             {agentsByStatus.waiting.map((agent) => (
               <CommandItem
                 key={agent.id}
