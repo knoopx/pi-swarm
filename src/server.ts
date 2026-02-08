@@ -21,6 +21,8 @@ import {
   buildAgentMetadataPath,
   buildSessionsDir,
   determineAgentAction,
+  getMergeDescription,
+  validateMerge,
   type Agent as CoreAgent,
 } from "./core";
 
@@ -235,8 +237,9 @@ async function createWorkspace(
 
 async function getModifiedFiles(workspace: string): Promise<string[]> {
   try {
-    // Use -r @- to show files changed in current commit (from parent to @)
-    const result = await Bun.$`cd ${workspace} && jj diff --name-only -r @-`.quiet();
+    // Compare agent workspace against default workspace to show all changes made by the agent
+    const result =
+      await Bun.$`cd ${workspace} && jj diff --name-only --from default@ --to @`.quiet();
     return result.stdout.toString().split("\n").filter(Boolean);
   } catch {
     return [];
@@ -245,8 +248,9 @@ async function getModifiedFiles(workspace: string): Promise<string[]> {
 
 async function getDiffStat(workspace: string): Promise<string> {
   try {
-    // Use -r @- to show stat of changes in current commit
-    const result = await Bun.$`cd ${workspace} && jj diff --stat -r @-`.quiet();
+    // Compare agent workspace against default workspace to show all changes made by the agent
+    const result =
+      await Bun.$`cd ${workspace} && jj diff --stat --from default@ --to @`.quiet();
     return result.stdout.toString();
   } catch {
     return "";
@@ -255,9 +259,9 @@ async function getDiffStat(workspace: string): Promise<string> {
 
 async function getDiff(workspace: string): Promise<string> {
   try {
-    // Use -r @- to show diff from parent commit to current commit
-    // Without this, only uncommitted working copy changes would be shown
-    const result = await Bun.$`cd ${workspace} && jj diff --git -r @-`.quiet();
+    // Compare agent workspace against default workspace to show all changes made by the agent
+    const result =
+      await Bun.$`cd ${workspace} && jj diff --git --from default@ --to @`.quiet();
     return result.stdout.toString();
   } catch {
     return "";
@@ -410,9 +414,11 @@ async function instructAgent(agent: Agent, instruction: string): Promise<void> {
       agent.status = "running";
       agent.instruction = instruction;
       // Use 'steer' if agent is currently streaming to redirect it
-      agent.session!.prompt(instruction, { streamingBehavior: "steer" }).catch((err) => {
-        handleAgentError(agent, err, "instruction error");
-      });
+      agent
+        .session!.prompt(instruction, { streamingBehavior: "steer" })
+        .catch((err) => {
+          handleAgentError(agent, err, "instruction error");
+        });
       break;
 
     case "resume_session":
@@ -518,12 +524,26 @@ async function deleteAgent(agent: Agent): Promise<void> {
 async function mergeAgent(
   agent: Agent,
 ): Promise<{ success: boolean; error?: string }> {
+  // Validate agent can be merged
+  const validation = validateMerge(agent);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+
   try {
     const cidResult =
       await Bun.$`cd ${agent.workspace} && jj log -r @ --no-graph -T 'change_id'`.quiet();
     const cid = cidResult.stdout.toString().trim();
+    // Get the description from the agent's change to use as merge message
+    const descResult =
+      await Bun.$`cd ${agent.workspace} && jj log -r @ --no-graph -T 'description'`.quiet();
+    const changeDescription = descResult.stdout.toString();
+    const description = getMergeDescription(
+      changeDescription,
+      agent.instruction,
+    );
     // Squash agent's changes into the main workspace (no new change created)
-    await Bun.$`cd ${agent.basePath} && jj squash --from ${cid} --into default@`.quiet();
+    await Bun.$`cd ${agent.basePath} && jj squash --from ${cid} --into default@ -m ${description}`.quiet();
     return { success: true };
   } catch (e) {
     return { success: false, error: String(e) };

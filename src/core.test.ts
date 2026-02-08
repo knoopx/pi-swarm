@@ -34,6 +34,8 @@ import {
   buildAgentMetadataPath,
   determineAgentAction,
   generateNameFromInstruction,
+  getMergeDescription,
+  validateMerge,
   type Agent,
 } from "./core";
 
@@ -549,6 +551,192 @@ describe("Core", () => {
         it("then returns false", () => {
           const agent = createTestAgent({ status });
           expect(canAgentBeMerged(agent)).toBe(false);
+        });
+      });
+    });
+  });
+
+  describe("getMergeDescription", () => {
+    describe("given change description is provided", () => {
+      describe("when getting merge description", () => {
+        it("then returns the change description", () => {
+          const result = getMergeDescription(
+            "Fix login bug",
+            "Original instruction",
+          );
+          expect(result).toBe("Fix login bug");
+        });
+      });
+
+      describe("when change description has leading/trailing whitespace", () => {
+        it("then returns trimmed description", () => {
+          const result = getMergeDescription("  Fix bug  ", "Instruction");
+          expect(result).toBe("Fix bug");
+        });
+      });
+    });
+
+    describe("given change description is empty", () => {
+      describe("when agent instruction is provided", () => {
+        it("then returns the agent instruction", () => {
+          const result = getMergeDescription("", "Implement feature X");
+          expect(result).toBe("Implement feature X");
+        });
+      });
+
+      describe("when agent instruction has whitespace only", () => {
+        it("then returns the default message", () => {
+          const result = getMergeDescription("", "   ");
+          expect(result).toBe("Merged agent changes");
+        });
+      });
+    });
+
+    describe("given both description and instruction are empty", () => {
+      describe("when getting merge description", () => {
+        it("then returns default message", () => {
+          const result = getMergeDescription("", "");
+          expect(result).toBe("Merged agent changes");
+        });
+      });
+
+      describe("when custom default message is provided", () => {
+        it("then returns custom default message", () => {
+          const result = getMergeDescription("", "", "Custom default");
+          expect(result).toBe("Custom default");
+        });
+      });
+    });
+
+    describe("given whitespace-only description", () => {
+      describe("when agent instruction is provided", () => {
+        it("then falls back to instruction", () => {
+          const result = getMergeDescription("   ", "Task description");
+          expect(result).toBe("Task description");
+        });
+      });
+    });
+
+    describe("merge description priority", () => {
+      const cases = [
+        {
+          changeDesc: "Change desc",
+          instruction: "Instruction",
+          expected: "Change desc",
+          scenario: "change description over instruction",
+        },
+        {
+          changeDesc: "",
+          instruction: "Instruction",
+          expected: "Instruction",
+          scenario: "instruction when no change description",
+        },
+        {
+          changeDesc: "",
+          instruction: "",
+          expected: "Merged agent changes",
+          scenario: "default when both empty",
+        },
+        {
+          changeDesc: "   ",
+          instruction: "   ",
+          expected: "Merged agent changes",
+          scenario: "default when both whitespace",
+        },
+      ];
+
+      cases.forEach(({ changeDesc, instruction, expected, scenario }) => {
+        describe(`given ${scenario}`, () => {
+          it(`then returns "${expected}"`, () => {
+            expect(getMergeDescription(changeDesc, instruction)).toBe(expected);
+          });
+        });
+      });
+    });
+  });
+
+  describe("validateMerge", () => {
+    describe("given agent can be merged", () => {
+      const mergeableStatuses: Agent["status"][] = [
+        "completed",
+        "waiting",
+        "stopped",
+      ];
+
+      mergeableStatuses.forEach((status) => {
+        describe(`when status is "${status}"`, () => {
+          it("then returns valid true", () => {
+            const agent = createTestAgent({ status });
+            const result = validateMerge(agent);
+            expect(result.valid).toBe(true);
+          });
+
+          it("then has no error message", () => {
+            const agent = createTestAgent({ status });
+            const result = validateMerge(agent);
+            expect(result.error).toBeUndefined();
+          });
+        });
+      });
+    });
+
+    describe("given agent cannot be merged", () => {
+      const nonMergeableStatuses: Agent["status"][] = [
+        "pending",
+        "running",
+        "error",
+      ];
+
+      nonMergeableStatuses.forEach((status) => {
+        describe(`when status is "${status}"`, () => {
+          it("then returns valid false", () => {
+            const agent = createTestAgent({ status });
+            const result = validateMerge(agent);
+            expect(result.valid).toBe(false);
+          });
+
+          it("then includes descriptive error message", () => {
+            const agent = createTestAgent({ status });
+            const result = validateMerge(agent);
+            expect(result.error).toContain(status);
+            expect(result.error).toContain("Cannot merge agent");
+          });
+
+          it("then error message lists valid statuses", () => {
+            const agent = createTestAgent({ status });
+            const result = validateMerge(agent);
+            expect(result.error).toContain("completed");
+            expect(result.error).toContain("waiting");
+            expect(result.error).toContain("stopped");
+          });
+        });
+      });
+    });
+
+    describe("merge validation decision matrix", () => {
+      const testCases: Array<{
+        status: Agent["status"];
+        expectedValid: boolean;
+        scenario: string;
+      }> = [
+        { status: "pending", expectedValid: false, scenario: "pending agent" },
+        { status: "running", expectedValid: false, scenario: "running agent" },
+        {
+          status: "completed",
+          expectedValid: true,
+          scenario: "completed agent",
+        },
+        { status: "waiting", expectedValid: true, scenario: "waiting agent" },
+        { status: "stopped", expectedValid: true, scenario: "stopped agent" },
+        { status: "error", expectedValid: false, scenario: "error agent" },
+      ];
+
+      testCases.forEach(({ status, expectedValid, scenario }) => {
+        describe(`given ${scenario}`, () => {
+          it(`then valid is ${expectedValid}`, () => {
+            const agent = createTestAgent({ status });
+            expect(validateMerge(agent).valid).toBe(expectedValid);
+          });
         });
       });
     });

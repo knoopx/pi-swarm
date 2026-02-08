@@ -146,6 +146,37 @@ export function canAgentBeMerged(agent: Agent): boolean {
   );
 }
 
+// Merge description resolution
+export function getMergeDescription(
+  changeDescription: string,
+  agentInstruction: string,
+  defaultMessage = "Merged agent changes",
+): string {
+  const trimmedDesc = changeDescription.trim();
+  if (trimmedDesc) return trimmedDesc;
+
+  const trimmedInstruction = agentInstruction.trim();
+  if (trimmedInstruction) return trimmedInstruction;
+
+  return defaultMessage;
+}
+
+// Validate merge preconditions
+export interface MergeValidation {
+  valid: boolean;
+  error?: string;
+}
+
+export function validateMerge(agent: Agent): MergeValidation {
+  if (!canAgentBeMerged(agent)) {
+    return {
+      valid: false,
+      error: `Cannot merge agent with status "${agent.status}". Agent must be completed, waiting, or stopped.`,
+    };
+  }
+  return { valid: true };
+}
+
 // Agent state transitions
 
 export function transitionToRunning(agent: Agent): Agent {
