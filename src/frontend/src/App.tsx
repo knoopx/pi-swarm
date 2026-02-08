@@ -707,10 +707,6 @@ Output ONLY the improved task specification, ready to be used as instructions fo
                     {selectedAgent.status === "running" && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Working...</span>
-                        <span className="text-xs opacity-60">
-                          (send a message to steer or interrupt)
-                        </span>
                       </div>
                     )}
                     <InstructInput
