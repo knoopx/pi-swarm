@@ -589,6 +589,8 @@ async function deleteAgent(agent: Agent): Promise<void> {
   agents.delete(agent.id);
   broadcast({ type: "agent_deleted", agentId: agent.id });
   await deleteAgentSession(agent.id);
+  // Try to start next pending agent since a slot may have freed up
+  await tryStartNextPending();
 }
 
 async function mergeAgent(
