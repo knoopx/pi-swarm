@@ -498,7 +498,8 @@ async function mergeAgent(
     const cidResult =
       await Bun.$`cd ${agent.workspace} && jj log -r @ --no-graph -T 'change_id'`.quiet();
     const cid = cidResult.stdout.toString().trim();
-    await Bun.$`cd ${agent.basePath} && jj squash --from ${cid}`.quiet();
+    // Create a merge commit with root workspace @ and agent's change as parents
+    await Bun.$`cd ${agent.basePath} && jj new default@ ${cid} -m ${"Merge: " + agent.instruction.substring(0, 100)}`.quiet();
     return { success: true };
   } catch (e) {
     return { success: false, error: String(e) };
