@@ -150,7 +150,7 @@
 
   /* App Header Styles */
   .app-header {
-    @apply h-16 border-b bg-gradient-to-r from-card via-card/95 to-card/90 backdrop-blur-sm flex items-center px-6 shrink-0 shadow-sm;
+    @apply h-16 border-b bg-gradient-to-r from-card via-card/95 to-card/90 backdrop-blur-sm flex items-center px-4 shrink-0 shadow-sm;
   }
 
   .app-header-logo {
@@ -166,7 +166,7 @@
   }
 
   .app-header-controls {
-    @apply ml-auto flex items-center gap-6;
+    @apply ml-auto flex items-center gap-4;
   }
 
   .app-header-concurrency {
@@ -190,7 +190,7 @@
   }
 
   .app-header-status {
-    @apply flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm;
+    @apply flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all shadow-sm;
   }
 
   /* Sidebar Styles */

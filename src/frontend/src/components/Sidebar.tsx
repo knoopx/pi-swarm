@@ -209,7 +209,7 @@ export function Sidebar({
             </p>
           </div>
         ) : (
-          <div className="p-2 space-y-2">
+          <div className="p-4 space-y-3">
             {Object.entries(statusConfig).map(([status, config]) => {
               const agentsInStatus = groupedAgents[status] || [];
               if (agentsInStatus.length === 0) return null;
