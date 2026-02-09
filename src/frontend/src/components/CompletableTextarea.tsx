@@ -146,10 +146,24 @@ const CompletableTextarea = React.forwardRef<
     const handleClick = useCallback(
       (e: React.MouseEvent<HTMLTextAreaElement>) => {
         const cursorPos = e.currentTarget.selectionStart;
-        checkForTrigger(value, cursorPos);
+
+        if (showCompletions) {
+          checkForTrigger(value, cursorPos);
+          return;
+        }
+
+        setShowCompletions(false);
+        setSearchQuery("");
+        setActiveTrigger(null);
       },
-      [value, checkForTrigger],
+      [value, checkForTrigger, showCompletions],
     );
+
+    const handleBlur = useCallback(() => {
+      setShowCompletions(false);
+      setSearchQuery("");
+      setActiveTrigger(null);
+    }, []);
 
     // Insert completion
     const insertCompletion = useCallback(
@@ -287,6 +301,7 @@ const CompletableTextarea = React.forwardRef<
               onChange={handleChange}
               onClick={handleClick}
               onKeyDown={handleKeyDown}
+              onBlur={handleBlur}
               className={textareaClasses}
               disabled={disabled}
               {...props}
