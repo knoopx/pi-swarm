@@ -21,6 +21,19 @@ import { FilesList } from "./FilesList";
 import type { Agent } from "../types";
 import { statusConfig } from "../lib/status-config";
 
+interface AgentCardProps {
+  agent: Agent;
+  onStart: (id: string) => void;
+  onStop: (id: string) => void;
+  onResume: (id: string) => void;
+  onDelete: (id: string) => void;
+  onMerge: (id: string) => void;
+  onInstruct: (id: string, instruction: string) => Promise<boolean>;
+  onGetDiff: (id: string) => Promise<string | null>;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
+}
+
 export function AgentCard({
   agent,
   onStart,

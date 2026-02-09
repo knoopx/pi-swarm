@@ -25,7 +25,7 @@ interface SidebarProps {
   creating: boolean;
   refining: boolean;
   agentSearch: string;
-  instructionInputRef: React.RefObject<HTMLTextAreaElement | null>;
+  instructionInputRef: React.RefObject<HTMLTextAreaElement>;
   onInstructionChange: (value: string) => void;
   onModelChange: (model: string) => void;
   onSelectAgent: (id: string) => void;
@@ -58,6 +58,7 @@ export function Sidebar({
   onAgentSearchChange,
   className,
 }: SidebarProps) {
+  const sortedAgents = sortAgents(agents);
   const filteredAgents = sortedAgents.filter(
     (agent) =>
       agent.name.toLowerCase().includes(agentSearch.toLowerCase()) ||

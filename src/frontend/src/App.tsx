@@ -268,6 +268,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
             instruction={instruction}
             creating={creating}
             refining={refining}
+            agentSearch={agentSearch}
             instructionInputRef={instructionInputRef}
             onInstructionChange={setInstruction}
             onModelChange={handleModelChange}
@@ -275,6 +276,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
             onRefine={handleRefine}
             onQueue={handleQueue}
             onCreate={handleCreate}
+            onAgentSearchChange={setAgentSearch}
             className={`${sidebarOpen ? "block" : "hidden"} lg:block`}
           />
 
