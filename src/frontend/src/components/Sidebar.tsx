@@ -4,9 +4,14 @@ import { Badge } from "./ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { ScrollArea } from "./ui/scroll-area";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
+import { StatusIndicator } from "./ui/status-indicator";
 import { CompletableTextarea } from "./CompletableTextarea";
 import { ModelSelector } from "./ModelSelector";
-import { statusConfig, sortAgents } from "../lib/status-config";
+import {
+  statusConfig,
+  sortAgents,
+  getVariantClass,
+} from "../lib/status-config";
 import type { Agent, ModelInfo, CompletionItem } from "../types";
 
 interface FileCompletionItem {
@@ -223,19 +228,9 @@ function AgentListItem({
         >
           <div className="flex items-center gap-2 min-w-0 w-full overflow-hidden">
             <div
-              className={`p-1.5 rounded-md transition-colors shrink-0 ${
-                config.variant === "default"
-                  ? "sidebar-agent-icon-default"
-                  : config.variant === "secondary"
-                    ? "sidebar-agent-icon-secondary"
-                    : config.variant === "destructive"
-                      ? "sidebar-agent-icon-destructive"
-                      : config.variant === "outline"
-                        ? "sidebar-agent-icon-outline"
-                        : "sidebar-agent-icon-fallback"
-              }`}
+              className={`p-1.5 rounded-md transition-colors shrink-0 ${getVariantClass("sidebar-agent-icon", config.variant)}`}
             >
-              {config.icon}
+              <StatusIndicator status={config.status} size="sm" />
             </div>
             <div className="min-w-0 flex-1 overflow-hidden w-0">
               <div className="flex items-center gap-2">

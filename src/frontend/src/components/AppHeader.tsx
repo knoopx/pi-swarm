@@ -113,7 +113,7 @@ export function AppHeader({
 
           {runningCount > 0 && (
             <Badge variant="running" className="app-header-running-badge">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <StatusIndicator status="running" size="sm" />
               <span>{runningCount}</span>
               <span className="hidden sm:inline">running</span>
             </Badge>

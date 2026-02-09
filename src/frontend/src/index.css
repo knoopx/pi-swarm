@@ -44,63 +44,7 @@
 }
 
 @layer components {
-  /* Agent Card Styles */
-  .agent-card-border-default {
-    @apply border-l-base07;
-  }
-
-  .agent-card-border-secondary {
-    @apply border-l-base0B;
-  }
-
-  .agent-card-border-destructive {
-    @apply border-l-base08;
-  }
-
-  .agent-card-border-outline {
-    @apply border-l-base09;
-  }
-
-  .agent-card-border-success {
-    @apply border-l-base0B;
-  }
-
-  .agent-card-border-warning {
-    @apply border-l-base09;
-  }
-
-  .agent-card-border-fallback {
-    @apply border-l-base02;
-  }
-
-  .agent-status-icon-default {
-    @apply bg-base07/20 text-base07;
-  }
-
-  .agent-status-icon-secondary {
-    @apply bg-base0B/20 text-base0B;
-  }
-
-  .agent-status-icon-destructive {
-    @apply bg-base08/20 text-base08;
-  }
-
-  .agent-status-icon-outline {
-    @apply bg-base09/20 text-base09;
-  }
-
-  .agent-status-icon-success {
-    @apply bg-base0B/20 text-base0B;
-  }
-
-  .agent-status-icon-warning {
-    @apply bg-base09/20 text-base09;
-  }
-
-  .agent-status-icon-fallback {
-    @apply bg-base02/20 text-base04;
-  }
-
+  /* Agent Card Action Buttons */
   .agent-button-start:hover {
     @apply hover:bg-base07/10 hover:text-base07;
   }
@@ -302,26 +246,6 @@
 
   .sidebar-agent-item-unselected {
     @apply hover:bg-base02/60 border-base02 hover:border-base07/20;
-  }
-
-  .sidebar-agent-icon-default {
-    @apply bg-base07/20 text-base07 group-hover:bg-base07/30;
-  }
-
-  .sidebar-agent-icon-secondary {
-    @apply bg-base0B/20 text-base0B group-hover:bg-base0B/30;
-  }
-
-  .sidebar-agent-icon-destructive {
-    @apply bg-base08/20 text-base08 group-hover:bg-base08/30;
-  }
-
-  .sidebar-agent-icon-outline {
-    @apply bg-base09/20 text-base09 group-hover:bg-base09/30;
-  }
-
-  .sidebar-agent-icon-fallback {
-    @apply bg-base02/20 text-base04 group-hover:bg-base02/30;
   }
 
   .sidebar-agent-name {

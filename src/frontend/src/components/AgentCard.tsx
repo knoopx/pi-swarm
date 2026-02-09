@@ -8,22 +8,18 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Pause,
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Textarea } from "./ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { StatusIndicator } from "./ui/status-indicator";
 import { DiffViewer } from "./DiffViewer";
 import { ConversationLog } from "./ConversationLog";
 import { FilesList } from "./FilesList";
 import type { Agent } from "../types";
-import { statusConfig } from "../lib/status-config";
+import { statusConfig, getVariantClass } from "../lib/status-config";
 
 interface AgentCardProps {
   agent: Agent;
@@ -87,43 +83,15 @@ export function AgentCard({
     <Card
       className={`transition-all duration-200 hover:shadow-md border-l-4 ${
         expanded ? "col-span-full shadow-lg" : ""
-      } ${
-        config.variant === "default"
-          ? "agent-card-border-default"
-          : config.variant === "secondary"
-            ? "agent-card-border-secondary"
-            : config.variant === "destructive"
-              ? "agent-card-border-destructive"
-              : config.variant === "outline"
-                ? "agent-card-border-outline"
-                : config.variant === "success"
-                  ? "agent-card-border-success"
-                  : config.variant === "warning"
-                    ? "agent-card-border-warning"
-                    : "agent-card-border-fallback"
-      }`}
+      } ${getVariantClass("agent-card-border", config.variant)}`}
     >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div
-              className={`p-2 rounded-lg ${
-                config.variant === "default"
-                  ? "agent-status-icon-default"
-                  : config.variant === "secondary"
-                    ? "agent-status-icon-secondary"
-                    : config.variant === "destructive"
-                      ? "agent-status-icon-destructive"
-                      : config.variant === "outline"
-                        ? "agent-status-icon-outline"
-                        : config.variant === "success"
-                          ? "agent-status-icon-success"
-                          : config.variant === "warning"
-                            ? "agent-status-icon-warning"
-                            : "agent-status-icon-fallback"
-              }`}
+              className={`p-2 rounded-lg ${getVariantClass("agent-status-icon", config.variant)}`}
             >
-              {config.icon}
+              <StatusIndicator status={config.status} size="sm" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1">
@@ -134,7 +102,7 @@ export function AgentCard({
                   variant={config.variant}
                   className="flex items-center gap-1.5 px-2 py-1"
                 >
-                  {config.icon}
+                  <StatusIndicator status={config.status} size="xs" />
                   {config.label}
                 </Badge>
                 {modifiedFilesCount > 0 && (
