@@ -90,18 +90,18 @@ export function AgentCard({
         expanded ? "col-span-full shadow-lg" : ""
       } ${
         config.variant === "default"
-          ? "border-l-base07"
+          ? "agent-card-border-default"
           : config.variant === "secondary"
-            ? "border-l-base0B"
+            ? "agent-card-border-secondary"
             : config.variant === "destructive"
-              ? "border-l-base08"
+              ? "agent-card-border-destructive"
               : config.variant === "outline"
-                ? "border-l-base09"
+                ? "agent-card-border-outline"
                 : config.variant === "success"
-                  ? "border-l-base0B"
+                  ? "agent-card-border-success"
                   : config.variant === "warning"
-                    ? "border-l-base09"
-                    : "border-l-base02"
+                    ? "agent-card-border-warning"
+                    : "agent-card-border-fallback"
       }`}
     >
       <CardHeader className="pb-3">
@@ -110,18 +110,18 @@ export function AgentCard({
             <div
               className={`p-2 rounded-lg ${
                 config.variant === "default"
-                  ? "bg-base07/20 text-base07"
+                  ? "agent-status-icon-default"
                   : config.variant === "secondary"
-                    ? "bg-base0B/20 text-base0B"
+                    ? "agent-status-icon-secondary"
                     : config.variant === "destructive"
-                      ? "bg-base08/20 text-base08"
+                      ? "agent-status-icon-destructive"
                       : config.variant === "outline"
-                        ? "bg-base09/20 text-base09"
+                        ? "agent-status-icon-outline"
                         : config.variant === "success"
-                          ? "bg-base0B/20 text-base0B"
+                          ? "agent-status-icon-success"
                           : config.variant === "warning"
-                            ? "bg-base09/20 text-base09"
-                            : "bg-base02/20 text-base04"
+                            ? "agent-status-icon-warning"
+                            : "agent-status-icon-fallback"
               }`}
             >
               {config.icon}
@@ -156,7 +156,7 @@ export function AgentCard({
                 variant="ghost"
                 onClick={() => onStart(agent.id)}
                 title="Start agent"
-                className="hover:bg-base07/10 hover:text-base07"
+                className="agent-button-start"
               >
                 <Play className="h-4 w-4" />
               </Button>
@@ -167,7 +167,7 @@ export function AgentCard({
                 variant="ghost"
                 onClick={() => onStop(agent.id)}
                 title="Stop agent"
-                className="hover:bg-base09/10 hover:text-base09"
+                className="agent-button-stop"
               >
                 <Square className="h-4 w-4" />
               </Button>
@@ -178,7 +178,7 @@ export function AgentCard({
                 variant="ghost"
                 onClick={() => onResume(agent.id)}
                 title="Resume agent"
-                className="hover:bg-base0B/10 hover:text-base0B"
+                className="agent-button-resume"
               >
                 <Play className="h-4 w-4" />
               </Button>
@@ -191,7 +191,7 @@ export function AgentCard({
                 variant="default"
                 onClick={() => onMerge(agent.id)}
                 title="Merge changes"
-                className="bg-base0B hover:bg-base0B/90"
+                className="agent-button-merge"
               >
                 <GitMerge className="h-4 w-4" />
               </Button>
@@ -201,7 +201,7 @@ export function AgentCard({
               variant="ghost"
               onClick={() => onDelete(agent.id)}
               title="Delete agent"
-              className="hover:bg-base08/10 hover:text-base08"
+              className="agent-button-delete"
             >
               <Trash2 className="h-4 w-4" />
             </Button>

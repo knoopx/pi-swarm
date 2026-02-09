@@ -66,11 +66,9 @@ export function Sidebar({
   );
 
   return (
-    <aside
-      className={`w-80 lg:w-96 border-r bg-card/30 flex flex-col shrink-0 ${className || ""}`}
-    >
+    <aside className={`sidebar ${className || ""}`}>
       {/* New Task Form */}
-      <div className="p-4 border-b space-y-3">
+      <div className="sidebar-form">
         <ModelSelector
           models={models}
           value={selectedModel}
@@ -151,7 +149,7 @@ export function Sidebar({
 
       {/* Search Agents */}
       {agents.length > 0 && (
-        <div className="p-4 border-b">
+        <div className="sidebar-search">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
@@ -159,23 +157,23 @@ export function Sidebar({
               placeholder="Search agents..."
               value={agentSearch}
               onChange={(e) => onAgentSearchChange(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+              className="sidebar-search-input"
             />
           </div>
         </div>
       )}
 
       {/* Agent List */}
-      <div className="flex-1 overflow-auto">
+      <div className="sidebar-agent-list">
         {loading ? (
-          <div className="flex flex-col items-center justify-center h-32 gap-2">
+          <div className="sidebar-loading">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
               Loading agents...
             </span>
           </div>
         ) : filteredAgents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 gap-2 p-4">
+          <div className="sidebar-empty">
             <Bot className="h-8 w-8 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground text-center">
               {agentSearch
@@ -215,33 +213,31 @@ function AgentListItem({
   return (
     <button
       onClick={onSelect}
-      className={`w-full text-left p-4 rounded-xl transition-all duration-200 hover:shadow-md border ${
+      className={`sidebar-agent-item group ${
         isSelected
-          ? "bg-base07/10 border-base07/30 shadow-md ring-2 ring-base07/20 scale-[1.02]"
-          : "hover:bg-muted/60 border-border hover:border-base07/20"
-      } group`}
+          ? "sidebar-agent-item-selected"
+          : "sidebar-agent-item-unselected"
+      }`}
     >
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div
             className={`p-2 rounded-lg transition-colors ${
               config.variant === "default"
-                ? "bg-base07/20 text-base07 group-hover:bg-base07/30"
+                ? "sidebar-agent-icon-default"
                 : config.variant === "secondary"
-                  ? "bg-base0B/20 text-base0B group-hover:bg-base0B/30"
+                  ? "sidebar-agent-icon-secondary"
                   : config.variant === "destructive"
-                    ? "bg-base08/20 text-base08 group-hover:bg-base08/30"
+                    ? "sidebar-agent-icon-destructive"
                     : config.variant === "outline"
-                      ? "bg-base09/20 text-base09 group-hover:bg-base09/30"
-                      : "bg-base02/20 text-base04 group-hover:bg-base02/30"
+                      ? "sidebar-agent-icon-outline"
+                      : "sidebar-agent-icon-fallback"
             }`}
           >
             {config.icon}
           </div>
           <div className="min-w-0 flex-1">
-            <span className="font-semibold text-sm truncate block leading-tight">
-              {agent.name}
-            </span>
+            <span className="sidebar-agent-name">{agent.name}</span>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant={config.variant} className="text-xs px-2 py-0.5">
                 {config.label}
@@ -255,9 +251,7 @@ function AgentListItem({
           </div>
         </div>
       </div>
-      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
-        {agent.instruction}
-      </p>
+      <p className="sidebar-agent-description">{agent.instruction}</p>
     </button>
   );
 }

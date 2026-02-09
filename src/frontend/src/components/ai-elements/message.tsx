@@ -53,9 +53,10 @@ export const MessageContent = ({
 }: MessageContentProps) => (
   <div
     className={cn(
+      "message-content",
       "is-user:dark flex w-fit min-w-0 max-w-full flex-col gap-2 overflow-hidden text-sm",
-      "group-[.is-user]:ml-auto group-[.is-user]:rounded-lg group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground",
-      "group-[.is-assistant]:text-foreground",
+      "group-[.is-user]:message-user",
+      "group-[.is-assistant]:message-assistant",
       className,
     )}
     {...props}
@@ -71,7 +72,7 @@ export const MessageActions = ({
   children,
   ...props
 }: MessageActionsProps) => (
-  <div className={cn("flex items-center gap-1", className)} {...props}>
+  <div className={cn("message-actions", className)} {...props}>
     {children}
   </div>
 );
@@ -241,10 +242,7 @@ export const MessageBranchSelector = ({
 
   return (
     <ButtonGroup
-      className={cn(
-        "[&>*:not(:first-child)]:rounded-l-md [&>*:not(:last-child)]:rounded-r-md",
-        className,
-      )}
+      className={cn("message-branch-selector", className)}
       orientation="horizontal"
       {...props}
     />
@@ -307,10 +305,7 @@ export const MessageBranchPage = ({
 
   return (
     <ButtonGroupText
-      className={cn(
-        "border-none bg-transparent text-muted-foreground shadow-none",
-        className,
-      )}
+      className={cn("message-branch-page", className)}
       {...props}
     >
       {currentBranch + 1} of {totalBranches}
@@ -324,14 +319,7 @@ export type MessageResponseProps = HTMLAttributes<HTMLDivElement> & {
 
 export const MessageResponse = memo(
   ({ className, children, ...props }: MessageResponseProps) => (
-    <div
-      className={cn(
-        "prose prose-sm dark:prose-invert max-w-none",
-        "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-        className,
-      )}
-      {...props}
-    >
+    <div className={cn("message-response", className)} {...props}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath, remarkEmoji]}
         rehypePlugins={[rehypeKatex]}
@@ -374,13 +362,7 @@ export const MessageToolbar = ({
   children,
   ...props
 }: MessageToolbarProps) => (
-  <div
-    className={cn(
-      "mt-4 flex w-full items-center justify-between gap-4",
-      className,
-    )}
-    {...props}
-  >
+  <div className={cn("message-toolbar", className)} {...props}>
     {children}
   </div>
 );
