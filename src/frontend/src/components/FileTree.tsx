@@ -214,9 +214,9 @@ function FileTreeNode({
               "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-muted/60",
               isSelected &&
                 "bg-primary/10 text-primary border border-primary/20 shadow-sm",
-              level > 0 && "ml-4",
+              "min-w-0",
             )}
-            style={{ paddingLeft: `${level * 16 + 8}px` }}
+            style={{ paddingLeft: `${level * 10 + 8}px` }}
           >
             {/* Expand/collapse button for directories */}
             {node.type === "directory" ? (
