@@ -91,47 +91,32 @@ export function AgentWorkspace({
   return (
     <>
       {/* Agent Header */}
-      <div className="h-16 lg:h-14 border-b bg-gradient-to-r from-card to-card/80 backdrop-blur-sm flex items-center justify-between px-4 shrink-0 shadow-sm">
-        <div className="flex items-center gap-4 min-w-0 flex-1">
-          <StatusIndicator
-            status={statusConfig[agent.status].status}
-            size="lg"
-          />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3 mb-1">
-              <h2 className="font-bold truncate text-base lg:text-lg text-foreground">
-                {agent.name}
-              </h2>
-              {changedFilesCount > 0 && (
-                <Badge
-                  variant="outline"
-                  className="text-xs px-2 py-1 bg-base09/10 text-base09 border-base09/20"
-                >
-                  {changedFilesCount} files changed
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground truncate max-w-lg hidden sm:block">
-              {agent.instruction.slice(0, 120)}
-              {agent.instruction.length > 120 ? "..." : ""}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 ml-4">
-          <UsageDisplay usage={agent.conversation.usage} />
-          <AgentActions
-            agent={agent}
-            isSpecAgent={isSpecAgent}
-            onStart={onStart}
-            onStop={onStop}
-            onResume={() => onResume()}
-            onMerge={onMerge}
-            onAcceptSpec={onAcceptSpec}
-            onDelete={() => setShowDeleteDialog(true)}
-          />
-        </div>
-      </div>
+      <header className="h-12 border-b bg-card/80 flex items-center gap-3 px-4 shrink-0">
+        <StatusIndicator
+          status={statusConfig[agent.status].status}
+          size="default"
+        />
+        <h2 className="font-semibold truncate text-sm flex-1">{agent.name}</h2>
+        {changedFilesCount > 0 && (
+          <Badge
+            variant="outline"
+            className="text-xs px-1.5 py-0.5 bg-base09/10 text-base09 border-base09/20"
+          >
+            {changedFilesCount} changed
+          </Badge>
+        )}
+        <UsageDisplay usage={agent.conversation.usage} />
+        <AgentActions
+          agent={agent}
+          isSpecAgent={isSpecAgent}
+          onStart={onStart}
+          onStop={onStop}
+          onResume={() => onResume()}
+          onMerge={onMerge}
+          onAcceptSpec={onAcceptSpec}
+          onDelete={() => setShowDeleteDialog(true)}
+        />
+      </header>
 
       {/* Tabs */}
       <Tabs
