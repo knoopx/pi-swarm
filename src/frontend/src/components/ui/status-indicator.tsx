@@ -8,7 +8,7 @@ const statusIndicatorVariants = cva(
     variants: {
       status: {
         idle: "bg-base03 text-base00",
-        running: "bg-base0C text-base00",
+        running: "bg-base0A text-base00",
         pending: "bg-base09 text-base00",
         success: "bg-base0B text-base00",
         error: "bg-base08 text-base00",
