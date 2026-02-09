@@ -204,42 +204,37 @@ function AgentListItem({
               : "sidebar-agent-item-unselected"
           }`}
         >
-          <div className="flex items-start justify-between gap-3 mb-2">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div
-                className={`p-2 rounded-lg transition-colors ${
-                  config.variant === "default"
-                    ? "sidebar-agent-icon-default"
-                    : config.variant === "secondary"
-                      ? "sidebar-agent-icon-secondary"
-                      : config.variant === "destructive"
-                        ? "sidebar-agent-icon-destructive"
-                        : config.variant === "outline"
-                          ? "sidebar-agent-icon-outline"
-                          : "sidebar-agent-icon-fallback"
-                }`}
-              >
-                {config.icon}
-              </div>
-              <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <div
+              className={`p-1.5 rounded-md transition-colors ${
+                config.variant === "default"
+                  ? "sidebar-agent-icon-default"
+                  : config.variant === "secondary"
+                    ? "sidebar-agent-icon-secondary"
+                    : config.variant === "destructive"
+                      ? "sidebar-agent-icon-destructive"
+                      : config.variant === "outline"
+                        ? "sidebar-agent-icon-outline"
+                        : "sidebar-agent-icon-fallback"
+              }`}
+            >
+              {config.icon}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
                 <span className="sidebar-agent-name">{agent.name}</span>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge
-                    variant={config.variant}
-                    className="text-xs px-2 py-0.5"
-                  >
-                    {config.label}
+                <Badge variant={config.variant} className="text-xs px-1.5 py-0">
+                  {config.label}
+                </Badge>
+                {modifiedFilesCount > 0 && (
+                  <Badge variant="outline" className="text-xs px-1.5 py-0">
+                    {modifiedFilesCount}
                   </Badge>
-                  {modifiedFilesCount > 0 && (
-                    <Badge variant="outline" className="text-xs px-2 py-0.5">
-                      {modifiedFilesCount} files
-                    </Badge>
-                  )}
-                </div>
+                )}
               </div>
+              <p className="sidebar-agent-description">{agent.instruction}</p>
             </div>
           </div>
-          <p className="sidebar-agent-description">{agent.instruction}</p>
         </button>
       </HoverCardTrigger>
       <HoverCardContent className="w-80" side="right">

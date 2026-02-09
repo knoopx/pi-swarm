@@ -223,7 +223,7 @@
   }
 
   .sidebar-agent-item {
-    @apply w-full text-left p-4 rounded-xl transition-all duration-200 hover:shadow-md border;
+    @apply w-full text-left p-3 rounded-lg transition-all duration-200 hover:shadow-md border;
   }
 
   .sidebar-agent-item-selected {
@@ -259,7 +259,7 @@
   }
 
   .sidebar-agent-description {
-    @apply text-sm text-muted-foreground leading-relaxed line-clamp-2;
+    @apply text-xs text-muted-foreground leading-snug line-clamp-1 truncate;
   }
 
   .completable-textarea-wrapper {
