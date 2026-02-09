@@ -94,14 +94,14 @@ export function AgentWorkspace({
           <div
             className={`p-3 rounded-xl ${
               statusConfig[agent.status].variant === "default"
-                ? "bg-blue-50 text-blue-600"
+                ? "bg-primary/20 text-primary"
                 : statusConfig[agent.status].variant === "secondary"
-                  ? "bg-green-50 text-green-600"
+                  ? "bg-success/20 text-success"
                   : statusConfig[agent.status].variant === "destructive"
-                    ? "bg-red-50 text-red-600"
+                    ? "bg-destructive/20 text-destructive"
                     : statusConfig[agent.status].variant === "outline"
-                      ? "bg-yellow-50 text-yellow-600"
-                      : "bg-gray-50 text-gray-600"
+                      ? "bg-warning/20 text-warning"
+                      : "bg-muted/20 text-muted-foreground"
             } shadow-sm`}
           >
             {statusConfig[agent.status].icon}
@@ -115,7 +115,7 @@ export function AgentWorkspace({
               {changedFilesCount > 0 && (
                 <Badge
                   variant="outline"
-                  className="text-xs px-2 py-1 bg-orange-50 text-orange-700 border-orange-200"
+                  className="text-xs px-2 py-1 bg-warning/10 text-warning border-warning/20"
                 >
                   {changedFilesCount} files changed
                 </Badge>
@@ -167,7 +167,7 @@ export function AgentWorkspace({
               {changedFilesCount > 0 && (
                 <Badge
                   variant="warning"
-                  className="px-2 py-0.5 text-xs bg-orange-100 text-orange-800 border-orange-200 ml-1"
+                  className="px-2 py-0.5 text-xs bg-warning/10 text-warning border-warning/20 ml-1"
                 >
                   {changedFilesCount}
                 </Badge>
@@ -299,14 +299,14 @@ function StatusBadge({ status }: { status: Agent["status"] }) {
           variant={config.variant}
           className={`gap-1.5 px-3 py-1.5 text-xs font-medium shadow-sm transition-all hover:shadow-md ${
             config.variant === "default"
-              ? "bg-blue-100 text-blue-800 border-blue-200"
+              ? "bg-primary/10 text-primary border-primary/20"
               : config.variant === "secondary"
-                ? "bg-green-100 text-green-800 border-green-200"
+                ? "bg-success/10 text-success border-success/20"
                 : config.variant === "destructive"
-                  ? "bg-red-100 text-red-800 border-red-200"
+                  ? "bg-destructive/10 text-destructive border-destructive/20"
                   : config.variant === "outline"
-                    ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                    : "bg-gray-100 text-gray-800 border-gray-200"
+                    ? "bg-warning/10 text-warning border-warning/20"
+                    : "bg-muted/10 text-muted-foreground border-muted/20"
           }`}
         >
           {config.icon}
@@ -573,15 +573,15 @@ export function EmptyState() {
         </p>
         <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg">
-            <Play className="h-4 w-4 text-green-600" />
+            <Play className="h-4 w-4 text-success" />
             <span>Start agents</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg">
-            <GitMerge className="h-4 w-4 text-blue-600" />
+            <GitMerge className="h-4 w-4 text-primary" />
             <span>Review changes</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg">
-            <CheckCircle className="h-4 w-4 text-purple-600" />
+            <CheckCircle className="h-4 w-4 text-info" />
             <span>Merge safely</span>
           </div>
         </div>

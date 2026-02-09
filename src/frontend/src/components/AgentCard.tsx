@@ -90,14 +90,18 @@ export function AgentCard({
         expanded ? "col-span-full shadow-lg" : ""
       } ${
         config.variant === "default"
-          ? "border-l-blue-500"
+          ? "border-l-primary"
           : config.variant === "secondary"
-            ? "border-l-green-500"
+            ? "border-l-success"
             : config.variant === "destructive"
-              ? "border-l-red-500"
+              ? "border-l-destructive"
               : config.variant === "outline"
-                ? "border-l-yellow-500"
-                : "border-l-gray-500"
+                ? "border-l-warning"
+                : config.variant === "success"
+                  ? "border-l-success"
+                  : config.variant === "warning"
+                    ? "border-l-warning"
+                    : "border-l-muted"
       }`}
     >
       <CardHeader className="pb-3">
@@ -106,14 +110,18 @@ export function AgentCard({
             <div
               className={`p-2 rounded-lg ${
                 config.variant === "default"
-                  ? "bg-blue-50 text-blue-600"
+                  ? "bg-primary/20 text-primary"
                   : config.variant === "secondary"
-                    ? "bg-green-50 text-green-600"
+                    ? "bg-success/20 text-success"
                     : config.variant === "destructive"
-                      ? "bg-red-50 text-red-600"
+                      ? "bg-destructive/20 text-destructive"
                       : config.variant === "outline"
-                        ? "bg-yellow-50 text-yellow-600"
-                        : "bg-gray-50 text-gray-600"
+                        ? "bg-warning/20 text-warning"
+                        : config.variant === "success"
+                          ? "bg-success/20 text-success"
+                          : config.variant === "warning"
+                            ? "bg-warning/20 text-warning"
+                            : "bg-muted/20 text-muted-foreground"
               }`}
             >
               {config.icon}
@@ -148,7 +156,7 @@ export function AgentCard({
                 variant="ghost"
                 onClick={() => onStart(agent.id)}
                 title="Start agent"
-                className="hover:bg-blue-50 hover:text-blue-600"
+                className="hover:bg-primary/10 hover:text-primary"
               >
                 <Play className="h-4 w-4" />
               </Button>
@@ -159,7 +167,7 @@ export function AgentCard({
                 variant="ghost"
                 onClick={() => onStop(agent.id)}
                 title="Stop agent"
-                className="hover:bg-orange-50 hover:text-orange-600"
+                className="hover:bg-warning/10 hover:text-warning"
               >
                 <Square className="h-4 w-4" />
               </Button>
@@ -170,7 +178,7 @@ export function AgentCard({
                 variant="ghost"
                 onClick={() => onResume(agent.id)}
                 title="Resume agent"
-                className="hover:bg-green-50 hover:text-green-600"
+                className="hover:bg-success/10 hover:text-success"
               >
                 <Play className="h-4 w-4" />
               </Button>
@@ -183,7 +191,7 @@ export function AgentCard({
                 variant="default"
                 onClick={() => onMerge(agent.id)}
                 title="Merge changes"
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-success hover:bg-success/90"
               >
                 <GitMerge className="h-4 w-4" />
               </Button>
@@ -193,7 +201,7 @@ export function AgentCard({
               variant="ghost"
               onClick={() => onDelete(agent.id)}
               title="Delete agent"
-              className="hover:bg-red-50 hover:text-red-600"
+              className="hover:bg-destructive/10 hover:text-destructive"
             >
               <Trash2 className="h-4 w-4" />
             </Button>

@@ -62,6 +62,10 @@ export default {
           DEFAULT: "var(--base09)",
           foreground: "var(--base00)",
         },
+        info: {
+          DEFAULT: "var(--base0C)",
+          foreground: "var(--base00)",
+        },
         border: "var(--base02)",
         input: "var(--base02)",
         ring: "var(--base07)",
