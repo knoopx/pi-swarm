@@ -30,22 +30,22 @@ const ansiConverter = new AnsiToHtml({
   newline: true,
   escapeXML: true,
   colors: {
-    0: "#1e1e1e",
-    1: "#f44747",
-    2: "#6a9955",
-    3: "#dcdcaa",
-    4: "#569cd6",
-    5: "#c586c0",
-    6: "#4ec9b0",
-    7: "#d4d4d4",
-    8: "#808080",
-    9: "#f44747",
-    10: "#6a9955",
-    11: "#dcdcaa",
-    12: "#569cd6",
-    13: "#c586c0",
-    14: "#4ec9b0",
-    15: "#ffffff",
+    0: "#191033", // base00 - background
+    1: "#ff628c", // base08 - red
+    2: "#a5ff90", // base0B - green
+    3: "#ffee80", // base0A - yellow
+    4: "#fad000", // base0D - blue
+    5: "#faefa5", // base0E - violet
+    6: "#80fcff", // base0C - cyan
+    7: "#f8f8f8", // base05 - foreground
+    8: "#404079", // base03 - comments/gray
+    9: "#ff628c", // base08 - bright red (same as regular)
+    10: "#a5ff90", // base0B - bright green (same as regular)
+    11: "#ffee80", // base0A - bright yellow (same as regular)
+    12: "#fad000", // base0D - bright blue (same as regular)
+    13: "#faefa5", // base0E - bright violet (same as regular)
+    14: "#80fcff", // base0C - bright cyan (same as regular)
+    15: "#e5e4fb", // base06 - bright foreground
   },
 });
 
