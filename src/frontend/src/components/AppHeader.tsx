@@ -56,7 +56,7 @@ export function AppHeader({
                   min={1}
                   max={10}
                   step={1}
-                  className="w-16"
+                  className="w-24"
                 />
                 <span className="w-4 text-center font-mono">
                   {maxConcurrency}
