@@ -11,6 +11,7 @@ import {
   MessageSquare,
   CheckCircle,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
