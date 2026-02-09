@@ -226,14 +226,14 @@ function AgentListItem({
           <div
             className={`p-2 rounded-lg transition-colors ${
               config.variant === "default"
-                ? "bg-blue-50 text-blue-600 group-hover:bg-blue-100"
+                ? "bg-primary/20 text-primary group-hover:bg-primary/30"
                 : config.variant === "secondary"
-                  ? "bg-green-50 text-green-600 group-hover:bg-green-100"
+                  ? "bg-success/20 text-success group-hover:bg-success/30"
                   : config.variant === "destructive"
-                    ? "bg-red-50 text-red-600 group-hover:bg-red-100"
+                    ? "bg-destructive/20 text-destructive group-hover:bg-destructive/30"
                     : config.variant === "outline"
-                      ? "bg-yellow-50 text-yellow-600 group-hover:bg-yellow-100"
-                      : "bg-gray-50 text-gray-600 group-hover:bg-gray-100"
+                      ? "bg-warning/20 text-warning group-hover:bg-warning/30"
+                      : "bg-muted/20 text-muted-foreground group-hover:bg-muted/30"
             }`}
           >
             {config.icon}
