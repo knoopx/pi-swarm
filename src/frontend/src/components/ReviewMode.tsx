@@ -286,6 +286,7 @@ export function ReviewMode({
       next.delete(path);
     } else {
       next.add(path);
+      setSelectedFile(path); // Sync selection when expanding in diff view
     }
     setExpandedFiles(next);
   };
