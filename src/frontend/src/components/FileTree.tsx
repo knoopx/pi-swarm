@@ -13,12 +13,10 @@ import {
   Archive,
   Search,
   X,
-  MoreHorizontal,
 } from "lucide-react";
 import { cn } from "src/lib/utils";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -32,11 +30,10 @@ interface FileNode {
   path: string;
   type: "file" | "directory";
   children?: FileNode[];
-  commentCount?: number;
 }
 
 interface FileTreeProps {
-  files: { path: string; commentCount?: number }[];
+  files: { path: string }[];
   expandedPaths: Set<string>;
   onToggleExpand: (path: string) => void;
   onSelectFile: (path: string) => void;
@@ -44,7 +41,6 @@ interface FileTreeProps {
   className?: string;
 }
 
-// Get file icon based on extension
 function getFileIcon(filename: string) {
   const ext = filename.split(".").pop()?.toLowerCase();
 
@@ -102,9 +98,7 @@ function getFileIcon(filename: string) {
   }
 }
 
-function buildFileTree(
-  files: { path: string; commentCount?: number }[],
-): FileNode[] {
+function buildFileTree(files: { path: string }[]): FileNode[] {
   const root: FileNode[] = [];
 
   for (const file of files) {
@@ -124,11 +118,9 @@ function buildFileTree(
           path: currentPath,
           type: isLast ? "file" : "directory",
           children: isLast ? undefined : [],
-          commentCount: isLast ? file.commentCount : undefined,
         };
         currentLevel.push(node);
         currentLevel.sort((a, b) => {
-          // Directories first, then files, alphabetical within each group
           if (a.type !== b.type) {
             return a.type === "directory" ? -1 : 1;
           }
@@ -153,7 +145,6 @@ function FileTreeNode({
   onSelectFile,
   selectedFile,
   searchTerm,
-  onContextMenu,
 }: {
   node: FileNode;
   level?: number;
@@ -162,7 +153,6 @@ function FileTreeNode({
   onSelectFile: (path: string) => void;
   selectedFile?: string;
   searchTerm: string;
-  onContextMenu: (path: string, event: React.MouseEvent) => void;
 }) {
   const isExpanded = expandedPaths.has(node.path);
   const isSelected = selectedFile === node.path;
@@ -208,36 +198,33 @@ function FileTreeNode({
             tabIndex={0}
             onClick={handleClick}
             onKeyDown={handleKeyDown}
-            onContextMenu={(e) => onContextMenu(node.path, e)}
             className={cn(
-              "group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-all duration-150 ease-in-out",
-              "hover:bg-muted/60 hover:shadow-sm",
+              "group flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-sm transition-colors",
+              "hover:bg-muted/60",
               "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-muted/60",
-              isSelected &&
-                "bg-primary/10 text-primary border border-primary/20 shadow-sm",
+              isSelected && "bg-primary/10 text-primary",
               "min-w-0",
             )}
-            style={{ paddingLeft: `${level * 10 + 8}px` }}
+            style={{ paddingLeft: `${level * 8 + 4}px` }}
           >
-            {/* Expand/collapse button for directories */}
             {node.type === "directory" ? (
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggleExpand(node.path);
                   }}
-                  className="flex items-center justify-center w-5 h-5 rounded hover:bg-muted/80 transition-colors"
+                  className="flex items-center justify-center w-4 h-4 flex-shrink-0"
                   aria-label={isExpanded ? "Collapse" : "Expand"}
                 >
                   {hasChildren ? (
                     isExpanded ? (
-                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      <ChevronDown className="h-3 w-3 text-muted-foreground" />
                     ) : (
-                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      <ChevronRight className="h-3 w-3 text-muted-foreground" />
                     )
                   ) : (
-                    <div className="w-3.5 h-3.5" />
+                    <div className="w-3 h-3" />
                   )}
                 </button>
                 {isExpanded ? (
@@ -245,27 +232,19 @@ function FileTreeNode({
                 ) : (
                   <Folder className="h-4 w-4 text-blue-500 flex-shrink-0" />
                 )}
-              </div>
+              </>
             ) : (
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <div className="w-5 h-5" />
-                <div className="text-muted-foreground group-hover:text-foreground transition-colors">
+              <>
+                <div className="w-4 h-4 flex-shrink-0" />
+                <div className="text-muted-foreground flex-shrink-0">
                   {getFileIcon(node.name)}
                 </div>
-              </div>
+              </>
             )}
 
-            {/* File/directory name with comment count badge */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="truncate flex-1 font-medium select-none inline-flex items-center gap-1.5">
-                  {node.name}
-                  {node.commentCount && node.commentCount > 0 && (
-                    <Badge size="sm" className="flex-shrink-0">
-                      {node.commentCount}
-                    </Badge>
-                  )}
-                </span>
+                <span className="truncate flex-1 select-none">{node.name}</span>
               </TooltipTrigger>
               <TooltipContent side="right" className="max-w-xs">
                 {node.path}
@@ -285,9 +264,8 @@ function FileTreeNode({
         </ContextMenuContent>
       </ContextMenu>
 
-      {/* Children */}
       {node.type === "directory" && isExpanded && node.children && (
-        <div className="animate-in slide-in-from-top-1 duration-150">
+        <div>
           {node.children.map((child) => (
             <FileTreeNode
               key={child.path}
@@ -298,7 +276,6 @@ function FileTreeNode({
               onSelectFile={onSelectFile}
               selectedFile={selectedFile}
               searchTerm={searchTerm}
-              onContextMenu={onContextMenu}
             />
           ))}
         </div>
@@ -319,14 +296,6 @@ export function FileTree({
 
   const treeData = useMemo(() => buildFileTree(files), [files]);
 
-  const handleContextMenu = useCallback(
-    (path: string, event: React.MouseEvent) => {
-      // Handle context menu logic here if needed
-      console.log("Context menu for:", path);
-    },
-    [],
-  );
-
   if (treeData.length === 0) {
     return (
       <div
@@ -343,23 +312,22 @@ export function FileTree({
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
-      {/* Search header */}
-      <div className="p-3 border-b bg-muted/20">
+      <div className="p-2 border-b">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Search files..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 pr-9 h-8 text-sm border-muted focus:border-primary/50"
+            className="pl-7 pr-7 h-7 text-sm"
           />
           {searchTerm && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setSearchTerm("")}
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted/80"
+              className="absolute right-0.5 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
             >
               <X className="h-3 w-3" />
             </Button>
@@ -367,9 +335,8 @@ export function FileTree({
         </div>
       </div>
 
-      {/* Tree content */}
       <div className="flex-1 overflow-auto">
-        <div className="p-2 space-y-0.5">
+        <div className="p-1">
           {treeData.map((node) => (
             <FileTreeNode
               key={node.path}
@@ -379,7 +346,6 @@ export function FileTree({
               onSelectFile={onSelectFile}
               selectedFile={selectedFile}
               searchTerm={searchTerm}
-              onContextMenu={handleContextMenu}
             />
           ))}
         </div>
