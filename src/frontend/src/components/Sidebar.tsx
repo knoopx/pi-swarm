@@ -266,10 +266,9 @@ function AgentListItem({
           <div className="grid grid-cols-2 gap-4 text-xs">
             <div>
               <span className="text-muted-foreground">Status:</span>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant={config.variant} className="text-xs px-2 py-0.5">
-                  {config.label}
-                </Badge>
+              <div className="flex items-center gap-1.5 mt-1">
+                <StatusIndicator status={config.status} size="xs" />
+                <span>{config.label}</span>
               </div>
             </div>
             <div>

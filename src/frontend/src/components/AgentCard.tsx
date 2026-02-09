@@ -98,13 +98,6 @@ export function AgentCard({
                 <span className="font-semibold truncate text-base">
                   {agent.name}
                 </span>
-                <Badge
-                  variant={config.variant}
-                  className="flex items-center gap-1.5 px-2 py-1"
-                >
-                  <StatusIndicator status={config.status} size="xs" />
-                  {config.label}
-                </Badge>
                 {modifiedFilesCount > 0 && (
                   <Badge variant="outline" className="text-xs">
                     {modifiedFilesCount} files
