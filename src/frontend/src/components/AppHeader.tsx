@@ -1,4 +1,4 @@
-import { Bot, Wifi, WifiOff, Command, Menu } from "lucide-react";
+import { Bot, Wifi, WifiOff, Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -10,7 +10,6 @@ interface AppHeaderProps {
   runningCount: number;
   maxConcurrency: number;
   onMaxConcurrencyChange: (value: number) => void;
-  onOpenCommandBar: () => void;
   onToggleSidebar: () => void;
 }
 
@@ -21,7 +20,6 @@ export function AppHeader({
   runningCount,
   maxConcurrency,
   onMaxConcurrencyChange,
-  onOpenCommandBar,
   onToggleSidebar,
 }: AppHeaderProps) {
   return (
@@ -47,24 +45,6 @@ export function AppHeader({
       </div>
 
       <div className="ml-auto flex items-center gap-3">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onOpenCommandBar}
-              className="h-7 gap-1.5 text-xs text-muted-foreground"
-            >
-              <Command className="h-3 w-3" />
-              <span className="hidden sm:inline">Command</span>
-              <kbd className="pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
-                ⌘K
-              </kbd>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Open command palette</TooltipContent>
-        </Tooltip>
-
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">

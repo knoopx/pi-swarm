@@ -245,7 +245,6 @@ Output ONLY the improved task specification, ready to be used as instructions fo
           runningCount={runningCount}
           maxConcurrency={maxConcurrency}
           onMaxConcurrencyChange={setMaxConcurrency}
-          onOpenCommandBar={() => setCommandBarOpen(true)}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />
 
