@@ -217,8 +217,8 @@ function AgentListItem({
       onClick={onSelect}
       className={`w-full text-left p-4 rounded-xl transition-all duration-200 hover:shadow-md border ${
         isSelected
-          ? "bg-primary/10 border-primary/30 shadow-md ring-2 ring-primary/20 scale-[1.02]"
-          : "hover:bg-muted/60 border-border hover:border-primary/20"
+          ? "bg-base07/10 border-base07/30 shadow-md ring-2 ring-base07/20 scale-[1.02]"
+          : "hover:bg-muted/60 border-border hover:border-base07/20"
       } group`}
     >
       <div className="flex items-start justify-between gap-3 mb-2">
@@ -226,14 +226,14 @@ function AgentListItem({
           <div
             className={`p-2 rounded-lg transition-colors ${
               config.variant === "default"
-                ? "bg-primary/20 text-primary group-hover:bg-primary/30"
+                ? "bg-base07/20 text-base07 group-hover:bg-base07/30"
                 : config.variant === "secondary"
-                  ? "bg-success/20 text-success group-hover:bg-success/30"
+                  ? "bg-base0B/20 text-base0B group-hover:bg-base0B/30"
                   : config.variant === "destructive"
-                    ? "bg-destructive/20 text-destructive group-hover:bg-destructive/30"
+                    ? "bg-base08/20 text-base08 group-hover:bg-base08/30"
                     : config.variant === "outline"
-                      ? "bg-warning/20 text-warning group-hover:bg-warning/30"
-                      : "bg-muted/20 text-muted-foreground group-hover:bg-muted/30"
+                      ? "bg-base09/20 text-base09 group-hover:bg-base09/30"
+                      : "bg-base02/20 text-base04 group-hover:bg-base02/30"
             }`}
           >
             {config.icon}

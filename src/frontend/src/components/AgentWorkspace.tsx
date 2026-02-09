@@ -94,14 +94,14 @@ export function AgentWorkspace({
           <div
             className={`p-3 rounded-xl ${
               statusConfig[agent.status].variant === "default"
-                ? "bg-primary/20 text-primary"
+                ? "bg-base07/20 text-base07"
                 : statusConfig[agent.status].variant === "secondary"
-                  ? "bg-success/20 text-success"
+                  ? "bg-base0B/20 text-base0B"
                   : statusConfig[agent.status].variant === "destructive"
-                    ? "bg-destructive/20 text-destructive"
+                    ? "bg-base08/20 text-base08"
                     : statusConfig[agent.status].variant === "outline"
-                      ? "bg-warning/20 text-warning"
-                      : "bg-muted/20 text-muted-foreground"
+                      ? "bg-base09/20 text-base09"
+                      : "bg-base02/20 text-base04"
             } shadow-sm`}
           >
             {statusConfig[agent.status].icon}
@@ -115,7 +115,7 @@ export function AgentWorkspace({
               {changedFilesCount > 0 && (
                 <Badge
                   variant="outline"
-                  className="text-xs px-2 py-1 bg-warning/10 text-warning border-warning/20"
+                  className="text-xs px-2 py-1 bg-base09/10 text-base09 border-base09/20"
                 >
                   {changedFilesCount} files changed
                 </Badge>
@@ -167,7 +167,7 @@ export function AgentWorkspace({
               {changedFilesCount > 0 && (
                 <Badge
                   variant="warning"
-                  className="px-2 py-0.5 text-xs bg-warning/10 text-warning border-warning/20 ml-1"
+                  className="px-2 py-0.5 text-xs bg-base09/10 text-base09 border-base09/20 ml-1"
                 >
                   {changedFilesCount}
                 </Badge>
@@ -299,14 +299,14 @@ function StatusBadge({ status }: { status: Agent["status"] }) {
           variant={config.variant}
           className={`gap-1.5 px-3 py-1.5 text-xs font-medium shadow-sm transition-all hover:shadow-md ${
             config.variant === "default"
-              ? "bg-primary/10 text-primary border-primary/20"
+              ? "bg-base07/10 text-base07 border-base07/20"
               : config.variant === "secondary"
-                ? "bg-success/10 text-success border-success/20"
+                ? "bg-base0B/10 text-base0B border-base0B/20"
                 : config.variant === "destructive"
-                  ? "bg-destructive/10 text-destructive border-destructive/20"
+                  ? "bg-base08/10 text-base08 border-base08/20"
                   : config.variant === "outline"
-                    ? "bg-warning/10 text-warning border-warning/20"
-                    : "bg-muted/10 text-muted-foreground border-muted/20"
+                    ? "bg-base09/10 text-base09 border-base09/20"
+                    : "bg-base02/10 text-base04 border-base02/20"
           }`}
         >
           {config.icon}
@@ -452,7 +452,7 @@ function InstructInput({
       <Loader2
         className={`h-5 w-5 mb-3 transition-opacity ${
           showSpinner ? "animate-spin opacity-100" : "opacity-0"
-        } text-primary`}
+        } text-base07`}
       />
       {models.length > 0 && selectedModel && onModelChange && (
         <ModelSelector
@@ -460,7 +460,7 @@ function InstructInput({
           value={selectedModel}
           onChange={onModelChange}
           disabled={modelDisabled}
-          className="h-[48px] w-[180px] border-2 focus:border-primary/50 transition-colors shadow-sm"
+          className="h-[48px] w-[180px] border-2 focus:border-base07/50 transition-colors shadow-sm"
         />
       )}
       <CompletableTextarea
@@ -471,7 +471,7 @@ function InstructInput({
         onQueue={onQueue ? handleQueue : undefined}
         completions={completions}
         fileCompletions={fileCompletions}
-        className="min-h-[48px] resize-none text-sm flex-1 border-2 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all shadow-sm rounded-lg"
+        className="min-h-[48px] resize-none text-sm flex-1 border-2 focus:border-base07/50 focus:ring-2 focus:ring-base07/20 transition-all shadow-sm rounded-lg"
         rows={1}
         disabled={disabled}
       />
@@ -489,7 +489,7 @@ function InstructInput({
         <Button
           onClick={handleSubmit}
           disabled={disabled || !value.trim()}
-          className="px-6 h-[48px] bg-primary hover:bg-primary/90 transition-colors shadow-sm font-medium"
+          className="px-6 h-[48px] bg-base07 hover:bg-base07/90 transition-colors shadow-sm font-medium"
         >
           Send
         </Button>
@@ -560,8 +560,8 @@ export function EmptyState() {
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="text-center max-w-lg">
-        <div className="flex items-center justify-center w-24 h-24 mx-auto mb-8 rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 border-2 border-primary/10 shadow-xl">
-          <Bot className="h-12 w-12 text-primary drop-shadow-sm" />
+        <div className="flex items-center justify-center w-24 h-24 mx-auto mb-8 rounded-full bg-gradient-to-br from-base07/20 via-base07/10 to-base07/5 border-2 border-base07/10 shadow-xl">
+          <Bot className="h-12 w-12 text-base07 drop-shadow-sm" />
         </div>
         <h2 className="text-2xl font-bold mb-4 text-foreground">
           Welcome to Pi Swarm
@@ -573,15 +573,15 @@ export function EmptyState() {
         </p>
         <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg">
-            <Play className="h-4 w-4 text-success" />
+            <Play className="h-4 w-4 text-base0B" />
             <span>Start agents</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg">
-            <GitMerge className="h-4 w-4 text-primary" />
+            <GitMerge className="h-4 w-4 text-base07" />
             <span>Review changes</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg">
-            <CheckCircle className="h-4 w-4 text-info" />
+            <CheckCircle className="h-4 w-4 text-base0C" />
             <span>Merge safely</span>
           </div>
         </div>

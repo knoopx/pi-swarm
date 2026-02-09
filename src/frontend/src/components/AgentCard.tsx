@@ -90,18 +90,18 @@ export function AgentCard({
         expanded ? "col-span-full shadow-lg" : ""
       } ${
         config.variant === "default"
-          ? "border-l-primary"
+          ? "border-l-base07"
           : config.variant === "secondary"
-            ? "border-l-success"
+            ? "border-l-base0B"
             : config.variant === "destructive"
-              ? "border-l-destructive"
+              ? "border-l-base08"
               : config.variant === "outline"
-                ? "border-l-warning"
+                ? "border-l-base09"
                 : config.variant === "success"
-                  ? "border-l-success"
+                  ? "border-l-base0B"
                   : config.variant === "warning"
-                    ? "border-l-warning"
-                    : "border-l-muted"
+                    ? "border-l-base09"
+                    : "border-l-base02"
       }`}
     >
       <CardHeader className="pb-3">
@@ -110,18 +110,18 @@ export function AgentCard({
             <div
               className={`p-2 rounded-lg ${
                 config.variant === "default"
-                  ? "bg-primary/20 text-primary"
+                  ? "bg-base07/20 text-base07"
                   : config.variant === "secondary"
-                    ? "bg-success/20 text-success"
+                    ? "bg-base0B/20 text-base0B"
                     : config.variant === "destructive"
-                      ? "bg-destructive/20 text-destructive"
+                      ? "bg-base08/20 text-base08"
                       : config.variant === "outline"
-                        ? "bg-warning/20 text-warning"
+                        ? "bg-base09/20 text-base09"
                         : config.variant === "success"
-                          ? "bg-success/20 text-success"
+                          ? "bg-base0B/20 text-base0B"
                           : config.variant === "warning"
-                            ? "bg-warning/20 text-warning"
-                            : "bg-muted/20 text-muted-foreground"
+                            ? "bg-base09/20 text-base09"
+                            : "bg-base02/20 text-base04"
               }`}
             >
               {config.icon}
@@ -156,7 +156,7 @@ export function AgentCard({
                 variant="ghost"
                 onClick={() => onStart(agent.id)}
                 title="Start agent"
-                className="hover:bg-primary/10 hover:text-primary"
+                className="hover:bg-base07/10 hover:text-base07"
               >
                 <Play className="h-4 w-4" />
               </Button>
@@ -167,7 +167,7 @@ export function AgentCard({
                 variant="ghost"
                 onClick={() => onStop(agent.id)}
                 title="Stop agent"
-                className="hover:bg-warning/10 hover:text-warning"
+                className="hover:bg-base09/10 hover:text-base09"
               >
                 <Square className="h-4 w-4" />
               </Button>
@@ -178,7 +178,7 @@ export function AgentCard({
                 variant="ghost"
                 onClick={() => onResume(agent.id)}
                 title="Resume agent"
-                className="hover:bg-success/10 hover:text-success"
+                className="hover:bg-base0B/10 hover:text-base0B"
               >
                 <Play className="h-4 w-4" />
               </Button>
@@ -191,7 +191,7 @@ export function AgentCard({
                 variant="default"
                 onClick={() => onMerge(agent.id)}
                 title="Merge changes"
-                className="bg-success hover:bg-success/90"
+                className="bg-base0B hover:bg-base0B/90"
               >
                 <GitMerge className="h-4 w-4" />
               </Button>
@@ -201,7 +201,7 @@ export function AgentCard({
               variant="ghost"
               onClick={() => onDelete(agent.id)}
               title="Delete agent"
-              className="hover:bg-destructive/10 hover:text-destructive"
+              className="hover:bg-base08/10 hover:text-base08"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -300,14 +300,14 @@ export function AgentCard({
                       handleInstruct();
                     }
                   }}
-                  className="pl-10 min-h-[48px] resize-none text-sm border-2 focus:border-primary/50 transition-colors"
+                  className="pl-10 min-h-[48px] resize-none text-sm border-2 focus:border-base07/50 transition-colors"
                   rows={1}
                 />
               </div>
               <Button
                 onClick={handleInstruct}
                 disabled={!newInstruction.trim()}
-                className="px-6 h-[48px] bg-primary hover:bg-primary/90 transition-colors"
+                className="px-6 h-[48px] bg-base07 hover:bg-base07/90 transition-colors"
               >
                 Send
               </Button>
