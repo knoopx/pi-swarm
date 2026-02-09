@@ -231,7 +231,6 @@ export function ReviewMode({
   const [commentText, setCommentText] = useState("");
   const [commentType, setCommentType] =
     useState<ReviewComment["type"]>("issue");
-  const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>("unified");
   const [selectedFile, setSelectedFile] = useState<string | undefined>();
   const [treeExpandedPaths, setTreeExpandedPaths] = useState<Set<string>>(
@@ -239,6 +238,15 @@ export function ReviewMode({
   );
 
   const files = useMemo(() => parseDiff(diff), [diff]);
+
+  // Initialize expandedFiles with all file paths (expanded by default)
+  const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
+  useMemo(() => {
+    if (files.length > 0) {
+      const allFilePaths = new Set(files.map((f) => f.path));
+      setExpandedFiles(allFilePaths);
+    }
+  }, [files]);
 
   const fileTreeData = useMemo(
     () =>
