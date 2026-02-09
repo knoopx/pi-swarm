@@ -1,9 +1,10 @@
-import { Bot, Wifi, WifiOff, Menu, Activity, Zap, Loader2 } from "lucide-react";
+import { Bot, Wifi, WifiOff, Menu, Activity, Zap } from "lucide-react";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
 import { Badge } from "./ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Separator } from "./ui/separator";
+import { StatusIndicator } from "./ui/status-indicator";
 import { cn } from "../lib/utils";
 
 interface AppHeaderProps {
