@@ -237,9 +237,11 @@ function AgentListItem({
             >
               {config.icon}
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="sidebar-agent-name">{agent.instruction}</span>
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="sidebar-agent-name min-w-0">
+                  {agent.instruction}
+                </span>
                 <Badge variant={config.variant} className="text-xs px-1.5 py-0">
                   {config.label}
                 </Badge>

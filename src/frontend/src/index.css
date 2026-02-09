@@ -229,7 +229,7 @@
   }
 
   .sidebar-agent-item {
-    @apply w-full text-left p-3 rounded-md transition-all duration-200 hover:shadow-md border;
+    @apply w-full text-left p-3 rounded-md transition-all duration-200 hover:shadow-md border overflow-hidden;
   }
 
   .sidebar-agent-item-selected {
