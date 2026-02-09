@@ -210,7 +210,6 @@ export function AgentWorkspace({
       {showInstructInput && (
         <div className="border-t bg-card/50 backdrop-blur-sm p-4 shrink-0 shadow-sm">
           <InstructInput
-            showRunningBadge={agent.status === "running"}
             onSubmit={(msg) => {
               if (agent.status === "stopped") {
                 onResume(msg);
@@ -376,7 +375,6 @@ function InstructInput({
   selectedModel,
   onModelChange,
   modelDisabled,
-  showRunningBadge,
 }: {
   onSubmit: (msg: string) => void;
   onQueue?: (msg: string) => void;
@@ -388,7 +386,6 @@ function InstructInput({
   selectedModel?: string;
   onModelChange?: (value: string) => void;
   modelDisabled?: boolean;
-  showRunningBadge?: boolean;
 }) {
   const [value, setValue] = useState("");
 
@@ -408,12 +405,6 @@ function InstructInput({
 
   return (
     <div className="flex gap-3 items-end">
-      {showRunningBadge && (
-        <div className="flex items-center gap-1.5 mb-3 text-xs text-base0C">
-          <StatusIndicator status="running" size="xs" />
-          <span>Running</span>
-        </div>
-      )}
       {models.length > 0 && selectedModel && onModelChange && (
         <ModelSelector
           models={models}
