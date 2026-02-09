@@ -27,7 +27,6 @@ import {
   Moon,
   StopCircle,
   PlayCircle,
-  Keyboard,
   RotateCcw,
   FolderSync,
   Layers,
@@ -614,39 +613,6 @@ export function CommandBar({
               iconClassName="text-destructive"
               onSelect={(id) => runCallback(() => onSelectAgent(id))}
             />
-
-            {/* Keyboard Shortcuts */}
-            <CommandSeparator />
-            <CommandGroup heading="Keyboard Shortcuts">
-              <CommandItem disabled>
-                <Keyboard className="mr-2 h-4 w-4 opacity-50" />
-                <span className="text-muted-foreground">⌘K / Ctrl+K</span>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  Command Palette
-                </span>
-              </CommandItem>
-              <CommandItem disabled>
-                <Keyboard className="mr-2 h-4 w-4 opacity-50" />
-                <span className="text-muted-foreground">N</span>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  New Task
-                </span>
-              </CommandItem>
-              <CommandItem disabled>
-                <Keyboard className="mr-2 h-4 w-4 opacity-50" />
-                <span className="text-muted-foreground">R</span>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  Toggle Review
-                </span>
-              </CommandItem>
-              <CommandItem disabled>
-                <Keyboard className="mr-2 h-4 w-4 opacity-50" />
-                <span className="text-muted-foreground">Escape</span>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  Deselect Agent
-                </span>
-              </CommandItem>
-            </CommandGroup>
           </>
         )}
       </CommandList>
