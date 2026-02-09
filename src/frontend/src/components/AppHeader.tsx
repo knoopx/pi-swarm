@@ -57,14 +57,14 @@ export function AppHeader({
               </div>
               <div className="app-header-control-content">
                 <span className="app-header-control-label">Concurrency</span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <Slider
                     value={[maxConcurrency]}
                     onValueChange={(value) => onMaxConcurrencyChange(value[0])}
                     min={1}
                     max={10}
                     step={1}
-                    className="w-20"
+                    className="w-12"
                   />
                   <span className="app-header-control-value">
                     {maxConcurrency}
