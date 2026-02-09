@@ -93,18 +93,29 @@ const CompletableTextarea = React.forwardRef<
       (text: string, cursorPos: number) => {
         const textBeforeCursor = text.slice(0, cursorPos);
 
-        // Check for @ trigger - can appear anywhere, find the last @ before cursor
+        // Check for @ trigger - must be at start of line or preceded by space
         const lastAtIndex = textBeforeCursor.lastIndexOf("@");
         if (lastAtIndex !== -1) {
-          // Check that there's no space between @ and cursor (still typing the file path)
-          const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1);
-          if (!textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
-            setActiveTrigger("@");
-            setTriggerPosition(lastAtIndex);
-            setSearchQuery(textAfterAt);
-            setShowCompletions(true);
-            setSelectedIndex(0);
-            return true;
+          // Check that @ is at start of line or preceded by space
+          const charBeforeAt = textBeforeCursor.slice(
+            lastAtIndex - 1,
+            lastAtIndex,
+          );
+          if (
+            lastAtIndex === 0 ||
+            charBeforeAt === " " ||
+            charBeforeAt === "\n"
+          ) {
+            // Check that there's no space between @ and cursor (still typing the file path)
+            const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1);
+            if (!textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
+              setActiveTrigger("@");
+              setTriggerPosition(lastAtIndex);
+              setSearchQuery(textAfterAt);
+              setShowCompletions(true);
+              setSelectedIndex(0);
+              return true;
+            }
           }
         }
 
@@ -143,26 +154,19 @@ const CompletableTextarea = React.forwardRef<
     );
 
     // Handle clicking on textarea
-    const handleClick = useCallback(
-      (e: React.MouseEvent<HTMLTextAreaElement>) => {
-        const cursorPos = e.currentTarget.selectionStart;
-
-        if (showCompletions) {
-          checkForTrigger(value, cursorPos);
-          return;
-        }
-
-        setShowCompletions(false);
-        setSearchQuery("");
-        setActiveTrigger(null);
-      },
-      [value, checkForTrigger, showCompletions],
-    );
-
-    const handleBlur = useCallback(() => {
+    const handleClick = useCallback(() => {
       setShowCompletions(false);
       setSearchQuery("");
       setActiveTrigger(null);
+    }, []);
+
+    const handleBlur = useCallback(() => {
+      // Delay closing to allow popover item clicks to register
+      setTimeout(() => {
+        setShowCompletions(false);
+        setSearchQuery("");
+        setActiveTrigger(null);
+      }, 150);
     }, []);
 
     // Insert completion
@@ -292,7 +296,7 @@ const CompletableTextarea = React.forwardRef<
       .join(" ");
 
     return (
-      <Popover open={showCompletions} onOpenChange={setShowCompletions}>
+      <Popover open={showCompletions}>
         <PopoverTrigger asChild>
           <div className={cn("completable-textarea-wrapper", flexClasses)}>
             <Textarea
