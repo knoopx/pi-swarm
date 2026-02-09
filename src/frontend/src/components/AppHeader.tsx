@@ -1,8 +1,10 @@
-import { Bot, Wifi, WifiOff, Menu, Activity } from "lucide-react";
+import { Bot, Wifi, WifiOff, Menu, Activity, Zap, Circle } from "lucide-react";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
 import { Badge } from "./ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Separator } from "./ui/separator";
+import { cn } from "../lib/utils";
 
 interface AppHeaderProps {
   cwd: string | null;
@@ -25,92 +27,132 @@ export function AppHeader({
 }: AppHeaderProps) {
   return (
     <header className="app-header">
+      {/* Mobile menu button */}
       <Button
         variant="ghost"
         size="icon"
-        className="mr-4 lg:hidden hover:bg-muted/50 transition-colors"
+        className="mr-3 lg:hidden"
         onClick={onToggleSidebar}
       >
         <Menu className="h-5 w-5" />
       </Button>
-      <div className="flex items-center gap-4">
+
+      {/* Logo and title */}
+      <div className="flex items-center gap-3">
         <div className="app-header-logo">
-          <Bot className="h-6 w-6 text-base07" />
+          <Bot className="h-5 w-5" />
+          {connected && <span className="app-header-logo-pulse" />}
         </div>
-        <div>
+        <div className="flex flex-col">
           <h1 className="app-header-title">Pi Swarm</h1>
-          {cwd && <p className="app-header-subtitle">{cwd}</p>}
+          {cwd && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p className="app-header-subtitle">{cwd}</p>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" align="start">
+                {cwd}
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
 
+      {/* Controls section */}
       <div className="app-header-controls">
+        {/* Concurrency control */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="app-header-concurrency">
-              <Activity className="h-4 w-4" />
-              <span>Concurrency:</span>
-              <div className="flex items-center gap-3">
-                <Slider
-                  value={[maxConcurrency]}
-                  onValueChange={(value) => onMaxConcurrencyChange(value[0])}
-                  min={1}
-                  max={10}
-                  step={1}
-                  className="w-20"
-                />
-                <Badge
-                  variant="outline"
-                  className="text-xs px-2 py-0.5 font-mono"
-                >
-                  {maxConcurrency}
-                </Badge>
+            <div className="app-header-control-group">
+              <div className="app-header-control-icon">
+                <Zap className="h-3.5 w-3.5" />
+              </div>
+              <div className="app-header-control-content">
+                <span className="app-header-control-label">Concurrency</span>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[maxConcurrency]}
+                    onValueChange={(value) => onMaxConcurrencyChange(value[0])}
+                    min={1}
+                    max={10}
+                    step={1}
+                    className="w-16"
+                  />
+                  <span className="app-header-control-value">
+                    {maxConcurrency}
+                  </span>
+                </div>
               </div>
             </div>
           </TooltipTrigger>
-          <TooltipContent className="bg-popover border shadow-lg">
-            Maximum concurrent agents
+          <TooltipContent>
+            <p className="font-medium">Max Concurrent Agents</p>
+            <p className="text-xs text-muted-foreground">
+              Number of agents that can run simultaneously
+            </p>
           </TooltipContent>
         </Tooltip>
 
-        <div className="flex items-center gap-3 text-sm">
-          <div className="app-header-agents">
-            <span className="text-muted-foreground">Agents:</span>
-            <Badge
-              variant="secondary"
-              className="text-xs px-2 py-0.5 font-medium"
-            >
-              {agentCount}
+        <Separator orientation="vertical" className="h-8 hidden sm:block" />
+
+        {/* Agent stats */}
+        <div className="app-header-stats">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="app-header-stat">
+                <Activity className="h-3.5 w-3.5 text-base04" />
+                <span className="app-header-stat-value">{agentCount}</span>
+                <span className="app-header-stat-label hidden sm:inline">
+                  agents
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Total agents in workspace</TooltipContent>
+          </Tooltip>
+
+          {runningCount > 0 && (
+            <Badge variant="running" className="app-header-running-badge">
+              <Circle className="h-1.5 w-1.5 fill-current animate-pulse" />
+              <span>{runningCount}</span>
+              <span className="hidden sm:inline">running</span>
             </Badge>
-            {runningCount > 0 && (
-              <>
-                <span className="text-muted-foreground">·</span>
-                <Badge variant="default" className="app-header-running-badge">
-                  {runningCount} running
-                </Badge>
-              </>
-            )}
-          </div>
+          )}
         </div>
 
+        <Separator orientation="vertical" className="h-8 hidden sm:block" />
+
+        {/* Connection status */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <div
-              className={`app-header-status ${
-                connected ? "app-header-connected" : "app-header-disconnected"
-              }`}
-            >
-              {connected ? (
-                <Wifi className="h-4 w-4" />
-              ) : (
-                <WifiOff className="h-4 w-4" />
+            <button
+              className={cn(
+                "app-header-connection",
+                connected
+                  ? "app-header-connection-online"
+                  : "app-header-connection-offline",
               )}
-              <span>{connected ? "Connected" : "Disconnected"}</span>
-            </div>
+            >
+              <span className="app-header-connection-indicator">
+                {connected ? (
+                  <Wifi className="h-3.5 w-3.5" />
+                ) : (
+                  <WifiOff className="h-3.5 w-3.5" />
+                )}
+              </span>
+              <span className="hidden sm:inline">
+                {connected ? "Connected" : "Offline"}
+              </span>
+            </button>
           </TooltipTrigger>
-          <TooltipContent className="bg-popover border shadow-lg">
-            {connected
-              ? "Real-time updates active"
-              : "Attempting to reconnect..."}
+          <TooltipContent>
+            <p className="font-medium">
+              {connected ? "Connection Active" : "Connection Lost"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {connected
+                ? "Real-time updates are enabled"
+                : "Attempting to reconnect..."}
+            </p>
           </TooltipContent>
         </Tooltip>
       </div>
