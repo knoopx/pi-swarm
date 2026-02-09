@@ -1,6 +1,6 @@
 import { Bot, Wifi, WifiOff, Menu } from "lucide-react";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { Slider } from "./ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 interface AppHeaderProps {
@@ -49,19 +49,19 @@ export function AppHeader({
           <TooltipTrigger asChild>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>Concurrency:</span>
-              <Input
-                type="number"
-                min={1}
-                max={10}
-                value={maxConcurrency}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value, 10);
-                  if (value >= 1 && value <= 10) {
-                    onMaxConcurrencyChange(value);
-                  }
-                }}
-                className="w-14 h-7 text-xs text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[maxConcurrency]}
+                  onValueChange={(value) => onMaxConcurrencyChange(value[0])}
+                  min={1}
+                  max={10}
+                  step={1}
+                  className="w-16"
+                />
+                <span className="w-4 text-center font-mono">
+                  {maxConcurrency}
+                </span>
+              </div>
             </div>
           </TooltipTrigger>
           <TooltipContent>Maximum concurrent agents</TooltipContent>
