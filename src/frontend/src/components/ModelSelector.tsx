@@ -69,7 +69,7 @@ export function ModelSelector({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[300px] p-0 bg-card border-border"
+        className="w-[280px] p-0 bg-card border-border"
         align="start"
       >
         <Command>
