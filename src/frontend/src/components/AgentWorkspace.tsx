@@ -131,9 +131,9 @@ export function AgentWorkspace({
             </TabsTrigger>
             <TabsTrigger value="review" className="gap-2">
               Review
-              {reviewComments.length > 0 && (
+              {changedFilesCount > 0 && (
                 <Badge variant="outline" className="px-1.5 py-0 text-xs">
-                  {reviewComments.length}
+                  {changedFilesCount}
                 </Badge>
               )}
             </TabsTrigger>
