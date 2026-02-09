@@ -8,7 +8,6 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
-  Loader2,
   Clock,
   CheckCircle,
   XCircle,
@@ -270,8 +269,10 @@ export function AgentCard({
               {loadingDiff ? (
                 <div className="h-[450px] rounded-lg border bg-card/50 shadow-inner flex items-center justify-center">
                   <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">
+                    <Badge variant="secondary" className="text-xs">
+                      Loading
+                    </Badge>
+                    <p className="text-sm text-muted-foreground mt-2">
                       Loading diff...
                     </p>
                   </div>

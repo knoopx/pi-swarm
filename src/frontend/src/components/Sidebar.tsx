@@ -1,6 +1,5 @@
 import {
   Bot,
-  Loader2,
   Send,
   Wand2,
   ListPlus,
@@ -128,7 +127,9 @@ export function Sidebar({
                 className="flex-1"
               >
                 {refining ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                    ...
+                  </Badge>
                 ) : (
                   <Wand2 className="h-4 w-4" />
                 )}
@@ -149,7 +150,9 @@ export function Sidebar({
                 className="flex-1"
               >
                 {creating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                    ...
+                  </Badge>
                 ) : (
                   <ListPlus className="h-4 w-4" />
                 )}
@@ -165,7 +168,9 @@ export function Sidebar({
             className="flex-1"
           >
             {creating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                ...
+              </Badge>
             ) : (
               <Send className="h-4 w-4" />
             )}
@@ -194,7 +199,9 @@ export function Sidebar({
       <ScrollArea className="sidebar-agent-list">
         {loading ? (
           <div className="sidebar-loading">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <Badge variant="secondary" className="text-xs">
+              Loading
+            </Badge>
             <span className="text-sm text-muted-foreground">
               Loading agents...
             </span>

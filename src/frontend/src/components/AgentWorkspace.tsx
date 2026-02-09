@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   Bot,
-  Loader2,
   Play,
   Square,
   Trash2,
@@ -225,7 +224,7 @@ export function AgentWorkspace({
       {showInstructInput && (
         <div className="border-t bg-card/50 backdrop-blur-sm p-4 shrink-0 shadow-sm">
           <InstructInput
-            showSpinner={agent.status === "running"}
+            showRunningBadge={agent.status === "running"}
             onSubmit={(msg) => {
               if (agent.status === "stopped") {
                 onResume(msg);
@@ -421,7 +420,7 @@ function InstructInput({
   selectedModel,
   onModelChange,
   modelDisabled,
-  showSpinner,
+  showRunningBadge,
 }: {
   onSubmit: (msg: string) => void;
   onQueue?: (msg: string) => void;
@@ -433,7 +432,7 @@ function InstructInput({
   selectedModel?: string;
   onModelChange?: (value: string) => void;
   modelDisabled?: boolean;
-  showSpinner?: boolean;
+  showRunningBadge?: boolean;
 }) {
   const [value, setValue] = useState("");
 
@@ -453,11 +452,11 @@ function InstructInput({
 
   return (
     <div className="flex gap-3 items-end">
-      <Loader2
-        className={`h-5 w-5 mb-3 transition-opacity ${
-          showSpinner ? "animate-spin opacity-100" : "opacity-0"
-        } text-base07`}
-      />
+      {showRunningBadge && (
+        <Badge variant="secondary" className="mb-3 text-xs px-2 py-0.5">
+          Running
+        </Badge>
+      )}
       {models.length > 0 && selectedModel && onModelChange && (
         <ModelSelector
           models={models}

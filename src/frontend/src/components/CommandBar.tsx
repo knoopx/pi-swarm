@@ -231,7 +231,7 @@ export function CommandBar({
                     setSearch("");
                   }}
                 >
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  <RefreshCw className="mr-2 h-4 w-4" />
                   <span>Running</span>
                   <span className="ml-auto text-xs text-muted-foreground">
                     {runningCount}
@@ -333,7 +333,7 @@ export function CommandBar({
                           ? XCircle
                           : FileCode
             }
-            iconClassName={statusFilter === "running" ? "animate-spin" : ""}
+            iconClassName={statusFilter === "running" ? "" : ""}
             onSelect={(id) => runCallback(() => onSelectAgent(id))}
           />
         )}
@@ -574,7 +574,7 @@ export function CommandBar({
               heading="Running"
               agents={agentsByStatus.running}
               icon={RefreshCw}
-              iconClassName="animate-spin"
+              iconClassName=""
               onSelect={(id) => runCallback(() => onSelectAgent(id))}
             />
 

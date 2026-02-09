@@ -1,5 +1,5 @@
 import {
-  Loader2,
+  Activity,
   CheckCircle2,
   Clock,
   PauseCircle,
@@ -33,7 +33,7 @@ export const statusConfig: Record<Agent["status"], StatusConfig> = {
   running: {
     variant: "warning",
     label: "Running",
-    icon: <Loader2 className="h-3 w-3 animate-spin" />,
+    icon: <Activity className="h-3 w-3" />,
     description: "Agent is working",
   },
   completed: {
