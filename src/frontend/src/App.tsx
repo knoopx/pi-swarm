@@ -42,7 +42,6 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [commandBarOpen, setCommandBarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("output");
-  const [agentSearch, setAgentSearch] = useState("");
   const [instruction, setInstruction] = useState("");
   const [creating, setCreating] = useState(false);
   const [refining, setRefining] = useState(false);
@@ -268,7 +267,6 @@ Output ONLY the improved task specification, ready to be used as instructions fo
             instruction={instruction}
             creating={creating}
             refining={refining}
-            agentSearch={agentSearch}
             instructionInputRef={instructionInputRef}
             onInstructionChange={setInstruction}
             onModelChange={handleModelChange}
@@ -276,7 +274,6 @@ Output ONLY the improved task specification, ready to be used as instructions fo
             onRefine={handleRefine}
             onQueue={handleQueue}
             onCreate={handleCreate}
-            onAgentSearchChange={setAgentSearch}
             className={`${sidebarOpen ? "block" : "hidden"} lg:block`}
           />
 

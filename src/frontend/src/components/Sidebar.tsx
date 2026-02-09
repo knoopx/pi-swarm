@@ -1,21 +1,8 @@
-import {
-  Bot,
-  Send,
-  Wand2,
-  ListPlus,
-  Search,
-  ChevronDown,
-  ChevronRight,
-} from "lucide-react";
+import { Bot, Send, Wand2, ListPlus } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { ScrollArea } from "./ui/scroll-area";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "./ui/collapsible";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 import { CompletableTextarea } from "./CompletableTextarea";
 import { ModelSelector } from "./ModelSelector";
@@ -39,7 +26,6 @@ interface SidebarProps {
   instruction: string;
   creating: boolean;
   refining: boolean;
-  agentSearch: string;
   instructionInputRef: React.RefObject<HTMLTextAreaElement>;
   onInstructionChange: (value: string) => void;
   onModelChange: (model: string) => void;
@@ -47,7 +33,6 @@ interface SidebarProps {
   onRefine: () => void;
   onQueue: () => void;
   onCreate: () => void;
-  onAgentSearchChange: (search: string) => void;
   className?: string;
 }
 
@@ -62,7 +47,6 @@ export function Sidebar({
   instruction,
   creating,
   refining,
-  agentSearch,
   instructionInputRef,
   onInstructionChange,
   onModelChange,
@@ -70,26 +54,9 @@ export function Sidebar({
   onRefine,
   onQueue,
   onCreate,
-  onAgentSearchChange,
   className,
 }: SidebarProps) {
   const sortedAgents = sortAgents(agents);
-  const filteredAgents = sortedAgents.filter(
-    (agent) =>
-      agent.name.toLowerCase().includes(agentSearch.toLowerCase()) ||
-      agent.instruction.toLowerCase().includes(agentSearch.toLowerCase()),
-  );
-
-  // Group agents by status
-  const groupedAgents = filteredAgents.reduce(
-    (acc, agent) => {
-      const status = agent.status;
-      if (!acc[status]) acc[status] = [];
-      acc[status].push(agent);
-      return acc;
-    },
-    {} as Record<string, Agent[]>,
-  );
 
   return (
     <aside className={`sidebar ${className || ""}`}>
@@ -179,22 +146,6 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Search Agents */}
-      {agents.length > 0 && (
-        <div className="sidebar-search">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search agents..."
-              value={agentSearch}
-              onChange={(e) => onAgentSearchChange(e.target.value)}
-              className="sidebar-search-input"
-            />
-          </div>
-        </div>
-      )}
-
       {/* Agent List */}
       <ScrollArea className="sidebar-agent-list">
         {loading ? (
@@ -206,48 +157,23 @@ export function Sidebar({
               Loading agents...
             </span>
           </div>
-        ) : filteredAgents.length === 0 ? (
+        ) : sortedAgents.length === 0 ? (
           <div className="sidebar-empty">
             <Bot className="h-8 w-8 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground text-center">
-              {agentSearch
-                ? "No agents match your search."
-                : "No agents yet. Create a task above to get started."}
+              No agents yet. Create a task above to get started.
             </p>
           </div>
         ) : (
-          <div className="p-4 space-y-3">
-            {Object.entries(statusConfig).map(([status, config]) => {
-              const agentsInStatus = groupedAgents[status] || [];
-              if (agentsInStatus.length === 0) return null;
-
-              return (
-                <Collapsible key={status} defaultOpen={status === "running"}>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-muted/50 rounded-md transition-colors">
-                    <div className="flex items-center gap-2">
-                      {config.icon}
-                      <span className="text-sm font-medium">
-                        {config.label}
-                      </span>
-                      <Badge variant="secondary" className="text-xs">
-                        {agentsInStatus.length}
-                      </Badge>
-                    </div>
-                    <ChevronDown className="h-4 w-4" />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-1 mt-1">
-                    {agentsInStatus.map((agent) => (
-                      <AgentListItem
-                        key={agent.id}
-                        agent={agent}
-                        isSelected={selectedId === agent.id}
-                        onSelect={() => onSelectAgent(agent.id)}
-                      />
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-              );
-            })}
+          <div className="p-4 space-y-1">
+            {sortedAgents.map((agent) => (
+              <AgentListItem
+                key={agent.id}
+                agent={agent}
+                isSelected={selectedId === agent.id}
+                onSelect={() => onSelectAgent(agent.id)}
+              />
+            ))}
           </div>
         )}
       </ScrollArea>
