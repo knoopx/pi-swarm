@@ -23,6 +23,12 @@
     --base0F: #fb94ff;
 
     --radius: 0.625rem;
+
+    /* Spacing scale */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 0.75rem;
+    --spacing-lg: 1rem;
   }
 }
 
@@ -117,11 +123,11 @@
 
   /* Message Component Styles */
   .message-user {
-    @apply ml-auto justify-end rounded-lg bg-secondary px-4 py-3 text-foreground;
+    @apply ml-auto justify-end rounded-md bg-base01 px-3 py-2 text-base05;
   }
 
   .message-assistant {
-    @apply text-foreground;
+    @apply text-base05;
   }
 
   .message-content {
@@ -129,11 +135,11 @@
   }
 
   .message-actions {
-    @apply flex items-center gap-1;
+    @apply flex items-center gap-2;
   }
 
   .message-toolbar {
-    @apply mt-4 flex w-full items-center justify-between gap-4;
+    @apply mt-3 flex w-full items-center justify-between gap-3;
   }
 
   .message-branch-selector {
@@ -141,7 +147,7 @@
   }
 
   .message-branch-page {
-    @apply border-none bg-transparent text-muted-foreground shadow-none;
+    @apply border-none bg-transparent text-base04 shadow-none;
   }
 
   .message-response {
@@ -150,31 +156,31 @@
 
   /* App Header Styles */
   .app-header {
-    @apply h-16 border-b bg-gradient-to-r from-card via-card/95 to-card/90 backdrop-blur-sm flex items-center px-4 shrink-0 shadow-sm;
+    @apply h-16 border-b bg-gradient-to-r from-base01 via-base01/95 to-base01/90 backdrop-blur-sm flex items-center px-3 shrink-0 shadow-sm;
   }
 
   .app-header-logo {
-    @apply flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-base07/20 to-base07/10 border border-base07/20 shadow-sm;
+    @apply flex items-center justify-center w-10 h-10 rounded-md bg-gradient-to-br from-base07/20 to-base07/10 border border-base07/20 shadow-sm;
   }
 
   .app-header-title {
-    @apply font-bold text-lg text-foreground;
+    @apply font-bold text-lg text-base05;
   }
 
   .app-header-subtitle {
-    @apply text-sm text-muted-foreground font-mono truncate max-w-xs;
+    @apply text-sm text-base04 font-mono truncate max-w-xs;
   }
 
   .app-header-controls {
-    @apply ml-auto flex items-center gap-4;
+    @apply ml-auto flex items-center gap-3;
   }
 
   .app-header-concurrency {
-    @apply flex items-center gap-3 text-sm text-muted-foreground bg-muted/30 px-3 py-2 rounded-lg border;
+    @apply flex items-center gap-2 text-sm text-base04 bg-base02/30 px-3 py-2 rounded-md border;
   }
 
   .app-header-agents {
-    @apply flex items-center gap-2 bg-muted/30 px-3 py-2 rounded-lg border;
+    @apply flex items-center gap-2 bg-base02/30 px-3 py-2 rounded-md border;
   }
 
   .app-header-running-badge {
@@ -190,24 +196,24 @@
   }
 
   .app-header-status {
-    @apply flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all shadow-sm;
+    @apply flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all shadow-sm;
   }
 
   /* Sidebar Styles */
   .sidebar {
-    @apply w-80 lg:w-96 border-r bg-card/30 flex flex-col shrink-0;
+    @apply w-80 lg:w-96 border-r bg-base01/30 flex flex-col shrink-0;
   }
 
   .sidebar-form {
-    @apply p-4 border-b space-y-3;
+    @apply p-3 border-b space-y-3;
   }
 
   .sidebar-search {
-    @apply p-4 border-b;
+    @apply p-3 border-b;
   }
 
   .sidebar-search-input {
-    @apply w-full pl-9 pr-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+    @apply w-full pl-9 pr-3 py-2 text-sm bg-base00 border border-base02 rounded-md focus:outline-none focus:ring-2 focus:ring-base07/50 focus:border-transparent;
   }
 
   .sidebar-agent-list {
@@ -219,11 +225,11 @@
   }
 
   .sidebar-empty {
-    @apply flex flex-col items-center justify-center h-32 gap-2 p-4;
+    @apply flex flex-col items-center justify-center h-32 gap-2 p-3;
   }
 
   .sidebar-agent-item {
-    @apply w-full text-left p-3 rounded-lg transition-all duration-200 hover:shadow-md border;
+    @apply w-full text-left p-3 rounded-md transition-all duration-200 hover:shadow-md border;
   }
 
   .sidebar-agent-item-selected {
@@ -231,7 +237,7 @@
   }
 
   .sidebar-agent-item-unselected {
-    @apply hover:bg-muted/60 border-border hover:border-base07/20;
+    @apply hover:bg-base02/60 border-base02 hover:border-base07/20;
   }
 
   .sidebar-agent-icon-default {
@@ -259,9 +265,10 @@
   }
 
   .sidebar-agent-description {
-    @apply text-xs text-muted-foreground leading-snug line-clamp-1 truncate;
+    @apply text-xs text-base04 leading-snug line-clamp-1 truncate;
   }
 
+  /* Completable Textarea Styles */
   .completable-textarea-wrapper {
     @apply relative;
   }
@@ -279,7 +286,7 @@
   }
 
   .completable-textarea-item-selected {
-    @apply bg-accent;
+    @apply bg-base02;
   }
 
   .completable-textarea-item-icon {
@@ -295,11 +302,11 @@
   }
 
   .completable-textarea-item-source {
-    @apply text-[10px] uppercase text-base03;
+    @apply text-xs uppercase text-base03;
   }
 
   .completable-textarea-item-content-selected {
-    @apply text-accent-foreground;
+    @apply text-base06;
   }
 }
 
