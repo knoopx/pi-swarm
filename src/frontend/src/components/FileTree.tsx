@@ -18,6 +18,7 @@ import {
 import { cn } from "src/lib/utils";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -254,26 +255,22 @@ function FileTreeNode({
               </div>
             )}
 
-            {/* File/directory name */}
+            {/* File/directory name with comment count badge */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="truncate flex-1 font-medium select-none">
+                <span className="truncate flex-1 font-medium select-none inline-flex items-center gap-1.5">
                   {node.name}
+                  {node.commentCount && node.commentCount > 0 && (
+                    <Badge size="sm" className="flex-shrink-0">
+                      {node.commentCount}
+                    </Badge>
+                  )}
                 </span>
               </TooltipTrigger>
               <TooltipContent side="right" className="max-w-xs">
                 {node.path}
               </TooltipContent>
             </Tooltip>
-
-            {/* Comment count badge */}
-            {node.commentCount && node.commentCount > 0 && (
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <div className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground font-medium shadow-sm">
-                  {node.commentCount}
-                </div>
-              </div>
-            )}
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-48">
