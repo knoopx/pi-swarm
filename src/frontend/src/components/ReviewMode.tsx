@@ -343,7 +343,7 @@ export function ReviewMode({
                     {file.path}
                   </span>
                   {comments.filter((c) => c.file === file.path).length > 0 && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="outline" className="text-xs">
                       {comments.filter((c) => c.file === file.path).length}
                     </Badge>
                   )}
@@ -399,7 +399,7 @@ export function ReviewMode({
       <div className="w-80 flex flex-col bg-card/30 shrink-0">
         <div className="p-3 border-b flex items-center justify-between">
           <span className="font-medium">Review Comments</span>
-          <Badge variant="secondary">{comments.length}</Badge>
+          <Badge variant="outline">{comments.length}</Badge>
         </div>
 
         <ScrollArea className="flex-1">

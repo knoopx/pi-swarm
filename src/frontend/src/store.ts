@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { Agent, ModelInfo, CompletionItem } from "./types";
 import { parseOutputToState, processEvent } from "./lib/conversation-state";
+import { toast } from "./hooks/use-toast";
 
 const WS_URL = `ws://${window.location.host}/ws`;
 
@@ -375,10 +376,21 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         provider,
         model,
       });
+      toast({
+        title: "Agent created",
+        description: `Agent "${name}" has been created successfully.`,
+      });
       return data;
     } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to create agent";
+      toast({
+        title: "Failed to create agent",
+        description: errorMessage,
+        variant: "destructive",
+      });
       set({
-        error: err instanceof Error ? err.message : "Failed to create agent",
+        error: errorMessage,
       });
       return null;
     }
@@ -465,8 +477,20 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   mergeAgent: async (id) => {
     try {
       await get().sendCommand("merge_agent", { agentId: id });
+      toast({
+        title: "Changes merged",
+        description:
+          "Agent changes have been successfully merged to main workspace.",
+      });
       return true;
     } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to merge agent";
+      toast({
+        title: "Failed to merge",
+        description: errorMessage,
+        variant: "destructive",
+      });
       console.error("Failed to merge agent:", err);
       return false;
     }

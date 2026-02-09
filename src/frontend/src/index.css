@@ -24,6 +24,28 @@
 
     --radius: 0.5rem;
   }
+
+  .light {
+    /* Light theme - Base16 Solarized Light */
+    --base00: #fdf6e3; /* background */
+    --base01: #eee8d5; /* background highlights */
+    --base02: #93a1a1; /* background lowlights */
+    --base03: #839496; /* comments, invisibles, line highlighting */
+    --base04: #657b83; /* dark foreground */
+    --base05: #586e75; /* default foreground */
+    --base06: #073642; /* light foreground */
+    --base07: #002b36; /* light background */
+    --base08: #dc322f; /* red */
+    --base09: #cb4b16; /* orange */
+    --base0A: #b58900; /* yellow */
+    --base0B: #859900; /* green */
+    --base0C: #2aa198; /* cyan */
+    --base0D: #268bd2; /* blue */
+    --base0E: #6c71c4; /* violet */
+    --base0F: #d33682; /* magenta */
+
+    --radius: 0.5rem;
+  }
 }
 
 @layer base {
@@ -31,7 +53,8 @@
     @apply border-base02;
   }
   body {
-    @apply bg-base00 text-base05;
+    background-color: var(--base00);
+    color: var(--base05);
   }
 }
 

@@ -1,7 +1,8 @@
-import { Bot, Wifi, WifiOff, Command } from "lucide-react";
+import { Bot, Wifi, WifiOff, Command, Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface AppHeaderProps {
   cwd: string | null;
@@ -11,6 +12,7 @@ interface AppHeaderProps {
   maxConcurrency: number;
   onMaxConcurrencyChange: (value: number) => void;
   onOpenCommandBar: () => void;
+  onToggleSidebar: () => void;
 }
 
 export function AppHeader({
@@ -21,9 +23,18 @@ export function AppHeader({
   maxConcurrency,
   onMaxConcurrencyChange,
   onOpenCommandBar,
+  onToggleSidebar,
 }: AppHeaderProps) {
   return (
     <header className="h-14 border-b bg-card/50 backdrop-blur-sm flex items-center px-4 shrink-0">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="mr-2 lg:hidden"
+        onClick={onToggleSidebar}
+      >
+        <Menu className="h-4 w-4" />
+      </Button>
       <div className="flex items-center gap-3">
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
           <Bot className="h-5 w-5 text-primary" />
@@ -107,6 +118,8 @@ export function AppHeader({
               : "Attempting to reconnect..."}
           </TooltipContent>
         </Tooltip>
+
+        <ThemeToggle />
       </div>
     </header>
   );

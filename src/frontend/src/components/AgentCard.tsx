@@ -19,43 +19,7 @@ import { DiffViewer } from "./DiffViewer";
 import { ConversationLog } from "./ConversationLog";
 import { FilesList } from "./FilesList";
 import type { Agent } from "../types";
-
-interface AgentCardProps {
-  agent: Agent;
-  onStart: (id: string) => Promise<boolean>;
-  onStop: (id: string) => Promise<boolean>;
-  onResume: (id: string, instruction?: string) => Promise<boolean>;
-  onDelete: (id: string) => Promise<boolean>;
-  onMerge: (id: string) => Promise<boolean>;
-  onInstruct: (id: string, instruction: string) => Promise<boolean>;
-  onGetDiff: (id: string) => Promise<string | null>;
-  expanded?: boolean;
-  onToggleExpand?: () => void;
-}
-
-const statusConfig: Record<
-  Agent["status"],
-  {
-    variant:
-      | "default"
-      | "secondary"
-      | "destructive"
-      | "outline"
-      | "success"
-      | "warning";
-    icon?: React.ReactNode;
-  }
-> = {
-  pending: { variant: "secondary" },
-  running: {
-    variant: "warning",
-    icon: <Loader2 className="h-3 w-3 animate-spin" />,
-  },
-  completed: { variant: "success" },
-  waiting: { variant: "default" },
-  stopped: { variant: "outline" },
-  error: { variant: "destructive" },
-};
+import { statusConfig } from "../lib/status-config";
 
 export function AgentCard({
   agent,
@@ -115,7 +79,7 @@ export function AgentCard({
                   className="flex items-center gap-1"
                 >
                   {config.icon}
-                  {agent.status}
+                  {config.label}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground truncate mt-0.5">
@@ -204,7 +168,7 @@ export function AgentCard({
                 Review
                 {(agent.modifiedFiles?.length || 0) > 0 && (
                   <Badge
-                    variant="secondary"
+                    variant="outline"
                     className="ml-1.5 text-[10px] px-1.5 py-0"
                   >
                     {agent.modifiedFiles?.length || 0}
@@ -231,7 +195,7 @@ export function AgentCard({
 
             <TabsContent value="diff" className="mt-0">
               {loadingDiff ? (
-                <div className="h-[400px] rounded-md border bg-muted/30 flex items-center justify-center">
+                <div className="h-[400px] rounded-md border bg-base00/50 flex items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (

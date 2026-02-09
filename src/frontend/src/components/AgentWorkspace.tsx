@@ -14,6 +14,14 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 import { ConversationLog } from "./ConversationLog";
 import { ReviewMode, type ReviewComment } from "./ReviewMode";
 import { ModelSelector } from "./ModelSelector";
@@ -68,6 +76,7 @@ export function AgentWorkspace({
   onInstruct,
   onModelChange,
 }: AgentWorkspaceProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const showInstructInput =
     agent.status === "running" ||
     agent.status === "completed" ||
@@ -77,22 +86,24 @@ export function AgentWorkspace({
   return (
     <>
       {/* Agent Header */}
-      <div className="h-14 border-b bg-card/30 flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="font-semibold truncate">{agent.name}</h2>
+      <div className="h-16 lg:h-14 border-b bg-card/30 flex items-center justify-between px-4 shrink-0">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="font-semibold truncate text-sm lg:text-base">
+                {agent.name}
+              </h2>
               <StatusBadge status={agent.status} />
               <UsageDisplay usage={agent.conversation.usage} />
             </div>
-            <p className="text-xs text-muted-foreground truncate max-w-md">
+            <p className="text-xs text-muted-foreground truncate max-w-md hidden sm:block">
               {agent.instruction.slice(0, 100)}
               {agent.instruction.length > 100 ? "..." : ""}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-2">
           <AgentActions
             agent={agent}
             isSpecAgent={isSpecAgent}
@@ -101,7 +112,7 @@ export function AgentWorkspace({
             onResume={() => onResume()}
             onMerge={onMerge}
             onAcceptSpec={onAcceptSpec}
-            onDelete={onDelete}
+            onDelete={() => setShowDeleteDialog(true)}
           />
         </div>
       </div>
@@ -120,7 +131,7 @@ export function AgentWorkspace({
             <TabsTrigger value="review" className="gap-2">
               Review
               {changedFilesCount > 0 && (
-                <Badge variant="secondary" className="px-1.5 py-0 text-xs">
+                <Badge variant="outline" className="px-1.5 py-0 text-xs">
                   {changedFilesCount}
                 </Badge>
               )}
@@ -202,6 +213,41 @@ export function AgentWorkspace({
           />
         </div>
       )}
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Agent</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the agent "{agent.name}"? This
+              action cannot be undone.
+              {agent.status === "completed" && changedFilesCount > 0 && (
+                <span className="block mt-2 text-destructive">
+                  Warning: This agent has {changedFilesCount} modified file
+                  {changedFilesCount !== 1 ? "s" : ""} that will be lost.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                onDelete();
+                setShowDeleteDialog(false);
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -438,24 +484,32 @@ function UsageDisplay({ usage }: { usage: AccumulatedUsage }) {
 
 export function EmptyState() {
   return (
-    <div className="flex-1 flex items-center justify-center">
-      <div className="text-center max-w-md px-4">
-        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-muted">
-          <Bot className="h-8 w-8 text-muted-foreground" />
+    <div className="flex-1 flex items-center justify-center p-8">
+      <div className="text-center max-w-lg">
+        <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
+          <Bot className="h-10 w-10 text-primary" />
         </div>
-        <h2 className="text-lg font-semibold mb-2">Welcome to Pi Swarm</h2>
-        <p className="text-muted-foreground text-sm mb-4">
+        <h2 className="text-xl font-semibold mb-3">Welcome to Pi Swarm</h2>
+        <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
           Create a new task in the sidebar to spawn an AI coding agent. Each
           agent works in its own isolated workspace and can be reviewed before
           merging.
         </p>
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p>
-            <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs">
-              Enter
-            </kbd>{" "}
-            to start a task
-          </p>
+        <div className="space-y-2 text-xs text-muted-foreground">
+          <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center gap-2">
+              <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs">
+                Enter
+              </kbd>
+              <span>to start a task</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs">
+                ⌘K
+              </kbd>
+              <span>for commands</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

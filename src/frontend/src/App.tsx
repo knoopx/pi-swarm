@@ -5,6 +5,7 @@ import { AppHeader } from "./components/AppHeader";
 import { Sidebar } from "./components/Sidebar";
 import { AgentWorkspace, EmptyState } from "./components/AgentWorkspace";
 import { CommandBar } from "./components/CommandBar";
+import { Toaster } from "./components/Toaster";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useModelSelection } from "./hooks/useModelSelection";
 import { extractTextFromConversation } from "./lib/conversation-state";
@@ -38,11 +39,13 @@ export default function App() {
     fetchWorkspaceFiles,
   } = useAgentStore();
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [commandBarOpen, setCommandBarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("output");
+  const [agentSearch, setAgentSearch] = useState("");
   const [instruction, setInstruction] = useState("");
   const [creating, setCreating] = useState(false);
   const [refining, setRefining] = useState(false);
-  const [activeTab, setActiveTab] = useState("output");
-  const [commandBarOpen, setCommandBarOpen] = useState(false);
   const instructionInputRef = useRef<HTMLTextAreaElement>(null);
 
   const { selectedModel, handleModelChange } = useModelSelection(models);
@@ -242,9 +245,18 @@ Output ONLY the improved task specification, ready to be used as instructions fo
           maxConcurrency={maxConcurrency}
           onMaxConcurrencyChange={setMaxConcurrency}
           onOpenCommandBar={() => setCommandBarOpen(true)}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />
 
         <div className="flex-1 flex overflow-hidden">
+          {/* Mobile overlay */}
+          {sidebarOpen && (
+            <div
+              className="fixed inset-0 bg-black/50 lg:hidden z-40"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+
           <Sidebar
             agents={agents}
             models={models}
@@ -263,6 +275,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
             onRefine={handleRefine}
             onQueue={handleQueue}
             onCreate={handleCreate}
+            className={`${sidebarOpen ? "block" : "hidden"} lg:block`}
           />
 
           <main className="flex-1 flex flex-col overflow-hidden bg-background">
@@ -298,6 +311,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
           </main>
         </div>
       </div>
+      <Toaster />
     </TooltipProvider>
   );
 }
