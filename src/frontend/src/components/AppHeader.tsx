@@ -1,6 +1,7 @@
-import { Bot, Wifi, WifiOff, Menu } from "lucide-react";
+import { Bot, Wifi, WifiOff, Menu, Activity } from "lucide-react";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
+import { Badge } from "./ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 interface AppHeaderProps {
@@ -23,75 +24,99 @@ export function AppHeader({
   onToggleSidebar,
 }: AppHeaderProps) {
   return (
-    <header className="h-14 border-b bg-card/50 backdrop-blur-sm flex items-center px-4 shrink-0">
+    <header className="h-16 border-b bg-gradient-to-r from-card via-card/95 to-card/90 backdrop-blur-sm flex items-center px-6 shrink-0 shadow-sm">
       <Button
         variant="ghost"
         size="icon"
-        className="mr-2 lg:hidden"
+        className="mr-4 lg:hidden hover:bg-muted/50 transition-colors"
         onClick={onToggleSidebar}
       >
-        <Menu className="h-4 w-4" />
+        <Menu className="h-5 w-5" />
       </Button>
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
-          <Bot className="h-5 w-5 text-primary" />
+      <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20 shadow-sm">
+          <Bot className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h1 className="font-semibold text-sm">Pi Swarm</h1>
+          <h1 className="font-bold text-lg text-foreground">Pi Swarm</h1>
           {cwd && (
-            <p className="text-xs text-muted-foreground font-mono">{cwd}</p>
+            <p className="text-sm text-muted-foreground font-mono truncate max-w-xs">
+              {cwd}
+            </p>
           )}
         </div>
       </div>
 
-      <div className="ml-auto flex items-center gap-3">
+      <div className="ml-auto flex items-center gap-6">
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground bg-muted/30 px-3 py-2 rounded-lg border">
+              <Activity className="h-4 w-4" />
               <span>Concurrency:</span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Slider
                   value={[maxConcurrency]}
                   onValueChange={(value) => onMaxConcurrencyChange(value[0])}
                   min={1}
                   max={10}
                   step={1}
-                  className="w-24"
+                  className="w-20"
                 />
-                <span className="w-4 text-center font-mono">
+                <Badge
+                  variant="outline"
+                  className="text-xs px-2 py-0.5 font-mono"
+                >
                   {maxConcurrency}
-                </span>
+                </Badge>
               </div>
             </div>
           </TooltipTrigger>
-          <TooltipContent>Maximum concurrent agents</TooltipContent>
+          <TooltipContent className="bg-popover border shadow-lg">
+            Maximum concurrent agents
+          </TooltipContent>
         </Tooltip>
 
-        <div className="text-xs text-muted-foreground">
-          {agentCount} agent{agentCount !== 1 ? "s" : ""}
-          {runningCount > 0 && (
-            <span className="text-base09 ml-1">· {runningCount} running</span>
-          )}
+        <div className="flex items-center gap-3 text-sm">
+          <div className="flex items-center gap-2 bg-muted/30 px-3 py-2 rounded-lg border">
+            <span className="text-muted-foreground">Agents:</span>
+            <Badge
+              variant="secondary"
+              className="text-xs px-2 py-0.5 font-medium"
+            >
+              {agentCount}
+            </Badge>
+            {runningCount > 0 && (
+              <>
+                <span className="text-muted-foreground">·</span>
+                <Badge
+                  variant="default"
+                  className="text-xs px-2 py-0.5 bg-green-600 hover:bg-green-700 font-medium"
+                >
+                  {runningCount} running
+                </Badge>
+              </>
+            )}
+          </div>
         </div>
 
         <Tooltip>
           <TooltipTrigger asChild>
             <div
-              className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm ${
                 connected
-                  ? "bg-success/30 text-success border border-success/50"
-                  : "bg-destructive/30 text-destructive border border-destructive/50"
+                  ? "bg-green-50 text-green-800 border border-green-200 hover:bg-green-100"
+                  : "bg-red-50 text-red-800 border border-red-200 hover:bg-red-100"
               }`}
             >
               {connected ? (
-                <Wifi className="h-3 w-3" />
+                <Wifi className="h-4 w-4" />
               ) : (
-                <WifiOff className="h-3 w-3" />
+                <WifiOff className="h-4 w-4" />
               )}
               <span>{connected ? "Connected" : "Disconnected"}</span>
             </div>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className="bg-popover border shadow-lg">
             {connected
               ? "Real-time updates active"
               : "Attempting to reconnect..."}

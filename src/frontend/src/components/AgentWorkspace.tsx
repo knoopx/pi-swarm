@@ -9,6 +9,8 @@ import {
   Sparkles,
   Zap,
   Coins,
+  MessageSquare,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -87,24 +89,47 @@ export function AgentWorkspace({
   return (
     <>
       {/* Agent Header */}
-      <div className="h-16 lg:h-14 border-b bg-card/30 flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+      <div className="h-16 lg:h-14 border-b bg-gradient-to-r from-card to-card/80 backdrop-blur-sm flex items-center justify-between px-4 shrink-0 shadow-sm">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
+          <div
+            className={`p-3 rounded-xl ${
+              statusConfig[agent.status].variant === "default"
+                ? "bg-blue-50 text-blue-600"
+                : statusConfig[agent.status].variant === "secondary"
+                  ? "bg-green-50 text-green-600"
+                  : statusConfig[agent.status].variant === "destructive"
+                    ? "bg-red-50 text-red-600"
+                    : statusConfig[agent.status].variant === "outline"
+                      ? "bg-yellow-50 text-yellow-600"
+                      : "bg-gray-50 text-gray-600"
+            } shadow-sm`}
+          >
+            {statusConfig[agent.status].icon}
+          </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="font-semibold truncate text-sm lg:text-base">
+            <div className="flex items-center gap-3 mb-1">
+              <h2 className="font-bold truncate text-base lg:text-lg text-foreground">
                 {agent.name}
               </h2>
               <StatusBadge status={agent.status} />
-              <UsageDisplay usage={agent.conversation.usage} />
+              {changedFilesCount > 0 && (
+                <Badge
+                  variant="outline"
+                  className="text-xs px-2 py-1 bg-orange-50 text-orange-700 border-orange-200"
+                >
+                  {changedFilesCount} files changed
+                </Badge>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground truncate max-w-md hidden sm:block">
-              {agent.instruction.slice(0, 100)}
-              {agent.instruction.length > 100 ? "..." : ""}
+            <p className="text-sm text-muted-foreground truncate max-w-lg hidden sm:block">
+              {agent.instruction.slice(0, 120)}
+              {agent.instruction.length > 120 ? "..." : ""}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 ml-2">
+        <div className="flex items-center gap-3 ml-4">
+          <UsageDisplay usage={agent.conversation.usage} />
           <AgentActions
             agent={agent}
             isSpecAgent={isSpecAgent}
@@ -124,15 +149,26 @@ export function AgentWorkspace({
         onValueChange={onTabChange}
         className="flex-1 flex flex-col overflow-hidden"
       >
-        <div className="px-4 pt-3">
-          <TabsList className="w-fit">
-            <TabsTrigger value="output" className="gap-2">
+        <div className="px-4 pt-4">
+          <TabsList className="w-fit bg-muted/50 p-1 shadow-sm border">
+            <TabsTrigger
+              value="output"
+              className="gap-2 px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+            >
+              <MessageSquare className="h-4 w-4" />
               Output
             </TabsTrigger>
-            <TabsTrigger value="review" className="gap-2">
+            <TabsTrigger
+              value="review"
+              className="gap-2 px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+            >
+              <GitMerge className="h-4 w-4" />
               Review
               {changedFilesCount > 0 && (
-                <Badge variant="warning" className="px-1.5 py-0 text-xs">
+                <Badge
+                  variant="warning"
+                  className="px-2 py-0.5 text-xs bg-orange-100 text-orange-800 border-orange-200 ml-1"
+                >
                   {changedFilesCount}
                 </Badge>
               )}
@@ -178,7 +214,7 @@ export function AgentWorkspace({
 
       {/* Instruction Input */}
       {showInstructInput && (
-        <div className="border-t p-4 bg-card/30 shrink-0 space-y-3">
+        <div className="border-t bg-card/50 backdrop-blur-sm p-4 shrink-0 shadow-sm">
           <InstructInput
             showSpinner={agent.status === "running"}
             onSubmit={(msg) => {
@@ -259,12 +295,27 @@ function StatusBadge({ status }: { status: Agent["status"] }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Badge variant={config.variant} className="gap-1.5">
+        <Badge
+          variant={config.variant}
+          className={`gap-1.5 px-3 py-1.5 text-xs font-medium shadow-sm transition-all hover:shadow-md ${
+            config.variant === "default"
+              ? "bg-blue-100 text-blue-800 border-blue-200"
+              : config.variant === "secondary"
+                ? "bg-green-100 text-green-800 border-green-200"
+                : config.variant === "destructive"
+                  ? "bg-red-100 text-red-800 border-red-200"
+                  : config.variant === "outline"
+                    ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                    : "bg-gray-100 text-gray-800 border-gray-200"
+          }`}
+        >
           {config.icon}
           {config.label}
         </Badge>
       </TooltipTrigger>
-      <TooltipContent>{config.description}</TooltipContent>
+      <TooltipContent className="bg-popover border shadow-lg">
+        {config.description}
+      </TooltipContent>
     </Tooltip>
   );
 }
@@ -397,9 +448,11 @@ function InstructInput({
   };
 
   return (
-    <div className="flex gap-2 items-end">
+    <div className="flex gap-3 items-end">
       <Loader2
-        className={`h-4 w-4 mb-3 ${showSpinner ? "animate-spin" : "invisible"}`}
+        className={`h-5 w-5 mb-3 transition-opacity ${
+          showSpinner ? "animate-spin opacity-100" : "opacity-0"
+        } text-primary`}
       />
       {models.length > 0 && selectedModel && onModelChange && (
         <ModelSelector
@@ -407,7 +460,7 @@ function InstructInput({
           value={selectedModel}
           onChange={onModelChange}
           disabled={modelDisabled}
-          className="h-[44px] w-[160px]"
+          className="h-[48px] w-[180px] border-2 focus:border-primary/50 transition-colors shadow-sm"
         />
       )}
       <CompletableTextarea
@@ -418,10 +471,29 @@ function InstructInput({
         onQueue={onQueue ? handleQueue : undefined}
         completions={completions}
         fileCompletions={fileCompletions}
-        className="min-h-[44px] resize-none text-sm flex-1"
+        className="min-h-[48px] resize-none text-sm flex-1 border-2 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all shadow-sm rounded-lg"
         rows={1}
         disabled={disabled}
       />
+      <div className="flex gap-2">
+        {onQueue && (
+          <Button
+            onClick={handleQueue}
+            disabled={disabled || !value.trim()}
+            variant="outline"
+            className="px-4 h-[48px] border-2 hover:bg-muted/50 transition-colors shadow-sm"
+          >
+            Queue
+          </Button>
+        )}
+        <Button
+          onClick={handleSubmit}
+          disabled={disabled || !value.trim()}
+          className="px-6 h-[48px] bg-primary hover:bg-primary/90 transition-colors shadow-sm font-medium"
+        >
+          Send
+        </Button>
+      </div>
     </div>
   );
 }
@@ -488,15 +560,31 @@ export function EmptyState() {
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="text-center max-w-lg">
-        <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
-          <Bot className="h-10 w-10 text-primary" />
+        <div className="flex items-center justify-center w-24 h-24 mx-auto mb-8 rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 border-2 border-primary/10 shadow-xl">
+          <Bot className="h-12 w-12 text-primary drop-shadow-sm" />
         </div>
-        <h2 className="text-xl font-semibold mb-3">Welcome to Pi Swarm</h2>
-        <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
+        <h2 className="text-2xl font-bold mb-4 text-foreground">
+          Welcome to Pi Swarm
+        </h2>
+        <p className="text-muted-foreground text-base leading-relaxed mb-8 max-w-md mx-auto">
           Create a new task in the sidebar to spawn an AI coding agent. Each
           agent works in its own isolated workspace and can be reviewed before
           merging.
         </p>
+        <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg">
+            <Play className="h-4 w-4 text-green-600" />
+            <span>Start agents</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg">
+            <GitMerge className="h-4 w-4 text-blue-600" />
+            <span>Review changes</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg">
+            <CheckCircle className="h-4 w-4 text-purple-600" />
+            <span>Merge safely</span>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -9,6 +9,11 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Pause,
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import { Button } from "./ui/button";
@@ -77,36 +82,73 @@ export function AgentCard({
   };
 
   const config = statusConfig[agent.status];
+  const modifiedFilesCount = agent.modifiedFiles?.length || 0;
 
   return (
-    <Card className={`transition-all ${expanded ? "col-span-full" : ""}`}>
-      <CardHeader className="pb-2">
+    <Card
+      className={`transition-all duration-200 hover:shadow-md border-l-4 ${
+        expanded ? "col-span-full shadow-lg" : ""
+      } ${
+        config.variant === "default"
+          ? "border-l-blue-500"
+          : config.variant === "secondary"
+            ? "border-l-green-500"
+            : config.variant === "destructive"
+              ? "border-l-red-500"
+              : config.variant === "outline"
+                ? "border-l-yellow-500"
+                : "border-l-gray-500"
+      }`}
+    >
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <Terminal className="h-5 w-5 text-muted-foreground shrink-0" />
+            <div
+              className={`p-2 rounded-lg ${
+                config.variant === "default"
+                  ? "bg-blue-50 text-blue-600"
+                  : config.variant === "secondary"
+                    ? "bg-green-50 text-green-600"
+                    : config.variant === "destructive"
+                      ? "bg-red-50 text-red-600"
+                      : config.variant === "outline"
+                        ? "bg-yellow-50 text-yellow-600"
+                        : "bg-gray-50 text-gray-600"
+              }`}
+            >
+              {config.icon}
+            </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold truncate">{agent.name}</span>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-semibold truncate text-base">
+                  {agent.name}
+                </span>
                 <Badge
                   variant={config.variant}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1.5 px-2 py-1"
                 >
                   {config.icon}
                   {config.label}
                 </Badge>
+                {modifiedFilesCount > 0 && (
+                  <Badge variant="outline" className="text-xs">
+                    {modifiedFilesCount} files
+                  </Badge>
+                )}
               </div>
-              <p className="text-xs text-muted-foreground truncate mt-0.5">
+              <p className="text-sm text-muted-foreground truncate">
                 {agent.instruction}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 ml-2">
             {agent.status === "pending" && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => onStart(agent.id)}
                 title="Start agent"
+                className="hover:bg-blue-50 hover:text-blue-600"
               >
                 <Play className="h-4 w-4" />
               </Button>
@@ -117,6 +159,7 @@ export function AgentCard({
                 variant="ghost"
                 onClick={() => onStop(agent.id)}
                 title="Stop agent"
+                className="hover:bg-orange-50 hover:text-orange-600"
               >
                 <Square className="h-4 w-4" />
               </Button>
@@ -127,6 +170,7 @@ export function AgentCard({
                 variant="ghost"
                 onClick={() => onResume(agent.id)}
                 title="Resume agent"
+                className="hover:bg-green-50 hover:text-green-600"
               >
                 <Play className="h-4 w-4" />
               </Button>
@@ -139,6 +183,7 @@ export function AgentCard({
                 variant="default"
                 onClick={() => onMerge(agent.id)}
                 title="Merge changes"
+                className="bg-green-600 hover:bg-green-700"
               >
                 <GitMerge className="h-4 w-4" />
               </Button>
@@ -147,11 +192,18 @@ export function AgentCard({
               size="sm"
               variant="ghost"
               onClick={() => onDelete(agent.id)}
+              title="Delete agent"
+              className="hover:bg-red-50 hover:text-red-600"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
             {onToggleExpand && (
-              <Button size="sm" variant="ghost" onClick={onToggleExpand}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onToggleExpand}
+                title={expanded ? "Collapse" : "Expand"}
+              >
                 {expanded ? (
                   <ChevronUp className="h-4 w-4" />
                 ) : (
@@ -164,27 +216,27 @@ export function AgentCard({
       </CardHeader>
 
       {expanded && (
-        <CardContent className="pt-2">
+        <CardContent className="pt-0">
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-3 mb-2">
-              <TabsTrigger value="output" className="text-xs">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsTrigger value="output" className="text-sm font-medium">
+                <MessageSquare className="h-4 w-4 mr-2" />
                 Output
               </TabsTrigger>
-              <TabsTrigger value="files" className="text-xs">
-                Files ({agent.modifiedFiles?.length || 0})
+              <TabsTrigger value="files" className="text-sm font-medium">
+                <Terminal className="h-4 w-4 mr-2" />
+                Files ({modifiedFilesCount})
               </TabsTrigger>
-              <TabsTrigger value="diff" className="text-xs">
+              <TabsTrigger value="diff" className="text-sm font-medium">
+                <GitMerge className="h-4 w-4 mr-2" />
                 Review
-                {(agent.modifiedFiles?.length || 0) > 0 && (
-                  <Badge
-                    variant="outline"
-                    className="ml-1.5 text-[10px] px-1.5 py-0"
-                  >
-                    {agent.modifiedFiles?.length || 0}
+                {modifiedFilesCount > 0 && (
+                  <Badge variant="outline" className="ml-2 text-xs px-1.5 py-0">
+                    {modifiedFilesCount}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -194,7 +246,7 @@ export function AgentCard({
               <ConversationLog
                 conversation={agent.conversation}
                 status={agent.status}
-                className="h-[400px] rounded-md border bg-base00/50"
+                className="h-[450px] rounded-lg border bg-card/50 shadow-inner"
               />
             </TabsContent>
 
@@ -202,19 +254,24 @@ export function AgentCard({
               <FilesList
                 files={agent.modifiedFiles || []}
                 diffStat={agent.diffStat || ""}
-                className="h-[400px] rounded-md border bg-muted/30"
+                className="h-[450px] rounded-lg border bg-card/50 shadow-inner"
               />
             </TabsContent>
 
             <TabsContent value="diff" className="mt-0">
               {loadingDiff ? (
-                <div className="h-[400px] rounded-md border bg-base00/50 flex items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <div className="h-[450px] rounded-lg border bg-card/50 shadow-inner flex items-center justify-center">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      Loading diff...
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <DiffViewer
                   diff={diff || ""}
-                  className="h-[400px] rounded-md border bg-base00/50"
+                  className="h-[450px] rounded-lg border bg-card/50 shadow-inner"
                 />
               )}
             </TabsContent>
@@ -223,7 +280,7 @@ export function AgentCard({
           {(agent.status === "running" ||
             agent.status === "completed" ||
             agent.status === "stopped") && (
-            <div className="mt-3 flex gap-2">
+            <div className="mt-4 flex gap-3">
               <div className="flex-1 relative">
                 <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Textarea
@@ -235,13 +292,14 @@ export function AgentCard({
                       handleInstruct();
                     }
                   }}
-                  className="pl-10 min-h-[44px] resize-none"
+                  className="pl-10 min-h-[48px] resize-none text-sm border-2 focus:border-primary/50 transition-colors"
                   rows={1}
                 />
               </div>
               <Button
                 onClick={handleInstruct}
                 disabled={!newInstruction.trim()}
+                className="px-6 h-[48px] bg-primary hover:bg-primary/90 transition-colors"
               >
                 Send
               </Button>

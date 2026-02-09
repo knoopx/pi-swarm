@@ -210,26 +210,52 @@ function AgentListItem({
   onSelect: () => void;
 }) {
   const config = statusConfig[agent.status];
+  const modifiedFilesCount = agent.modifiedFiles?.length || 0;
 
   return (
     <button
       onClick={onSelect}
-      className={`w-full text-left p-3 rounded-lg transition-all hover:shadow-sm ${
+      className={`w-full text-left p-4 rounded-xl transition-all duration-200 hover:shadow-md border ${
         isSelected
-          ? "bg-primary/10 border border-primary/30 shadow-sm ring-1 ring-primary/20"
-          : "hover:bg-muted/50 border border-transparent"
-      }`}
+          ? "bg-primary/10 border-primary/30 shadow-md ring-2 ring-primary/20 scale-[1.02]"
+          : "hover:bg-muted/60 border-border hover:border-primary/20"
+      } group`}
     >
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <span className="font-medium text-sm truncate flex-1 leading-tight">
-          {agent.name}
-        </span>
-        <Badge variant={config.variant} className="gap-1.5 text-xs shrink-0">
-          {config.icon}
-          <span className="hidden sm:inline">{config.label}</span>
-        </Badge>
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div
+            className={`p-2 rounded-lg transition-colors ${
+              config.variant === "default"
+                ? "bg-blue-50 text-blue-600 group-hover:bg-blue-100"
+                : config.variant === "secondary"
+                  ? "bg-green-50 text-green-600 group-hover:bg-green-100"
+                  : config.variant === "destructive"
+                    ? "bg-red-50 text-red-600 group-hover:bg-red-100"
+                    : config.variant === "outline"
+                      ? "bg-yellow-50 text-yellow-600 group-hover:bg-yellow-100"
+                      : "bg-gray-50 text-gray-600 group-hover:bg-gray-100"
+            }`}
+          >
+            {config.icon}
+          </div>
+          <div className="min-w-0 flex-1">
+            <span className="font-semibold text-sm truncate block leading-tight">
+              {agent.name}
+            </span>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant={config.variant} className="text-xs px-2 py-0.5">
+                {config.label}
+              </Badge>
+              {modifiedFilesCount > 0 && (
+                <Badge variant="outline" className="text-xs px-2 py-0.5">
+                  {modifiedFilesCount} files
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
         {agent.instruction}
       </p>
     </button>
