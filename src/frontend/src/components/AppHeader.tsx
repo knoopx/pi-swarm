@@ -51,26 +51,17 @@ export function AppHeader({
       <div className="app-header-controls">
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="app-header-control-group">
-              <div className="app-header-control-icon">
-                <Zap className="h-3.5 w-3.5" />
-              </div>
-              <div className="app-header-control-content">
-                <span className="app-header-control-label">Concurrency</span>
-                <div className="flex items-center gap-1.5">
-                  <Slider
-                    value={[maxConcurrency]}
-                    onValueChange={(value) => onMaxConcurrencyChange(value[0])}
-                    min={1}
-                    max={10}
-                    step={1}
-                    className="w-12"
-                  />
-                  <span className="app-header-control-value">
-                    {maxConcurrency}
-                  </span>
-                </div>
-              </div>
+            <div className="flex items-center gap-2 text-xs text-base04">
+              <Zap className="h-3.5 w-3.5" />
+              <Slider
+                value={[maxConcurrency]}
+                onValueChange={(value) => onMaxConcurrencyChange(value[0])}
+                min={1}
+                max={10}
+                step={1}
+                className="w-12"
+              />
+              <span className="tabular-nums">{maxConcurrency}</span>
             </div>
           </TooltipTrigger>
           <TooltipContent>Max concurrent agents</TooltipContent>
