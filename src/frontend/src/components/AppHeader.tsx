@@ -3,7 +3,6 @@ import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
 import { Badge } from "./ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { StatusIndicator } from "./ui/status-indicator";
 import { cn } from "../lib/utils";
 
 interface AppHeaderProps {
@@ -87,12 +86,8 @@ export function AppHeader({
         </Tooltip>
 
         {runningCount > 0 && (
-          <Badge
-            variant="running"
-            className="flex items-center gap-1.5 text-xs px-2 py-0.5"
-          >
-            <StatusIndicator status="running" size="sm" />
-            <span>{runningCount}</span>
+          <Badge variant="running" className="text-xs px-2 py-0.5">
+            {runningCount} running
           </Badge>
         )}
 
