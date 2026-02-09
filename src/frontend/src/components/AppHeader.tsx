@@ -2,7 +2,6 @@ import { Bot, Wifi, WifiOff, Command, Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { ThemeToggle } from "./ThemeToggle";
 
 interface AppHeaderProps {
   cwd: string | null;
@@ -118,8 +117,6 @@ export function AppHeader({
               : "Attempting to reconnect..."}
           </TooltipContent>
         </Tooltip>
-
-        <ThemeToggle />
       </div>
     </header>
   );
