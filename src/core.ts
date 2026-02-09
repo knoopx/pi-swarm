@@ -16,6 +16,7 @@ export interface Agent {
   diffStat: string;
   model: string;
   provider: string;
+  baseRevision?: string;
 }
 
 export type SerializedAgent = Omit<Agent, "session">;
@@ -54,6 +55,7 @@ export function createAgentData(
   basePath: string,
   provider: string,
   model: string,
+  baseRevision?: string,
 ): Agent {
   const now = nowTs();
   return {
@@ -70,6 +72,7 @@ export function createAgentData(
     diffStat: "",
     provider,
     model,
+    baseRevision,
   };
 }
 

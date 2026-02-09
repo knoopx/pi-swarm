@@ -545,9 +545,11 @@ function createHandlerContext(): HandlerContext<Agent> {
     setAgentModel,
     deleteAgent,
     mergeAgent,
-    getDiff,
-    getModifiedFiles,
-    getDiffStat,
+    getDiff: async (agent) => getDiff(agent.workspace, agent.baseRevision),
+    getModifiedFiles: async (agent) =>
+      getModifiedFiles(agent.workspace, agent.baseRevision),
+    getDiffStat: async (agent) =>
+      getDiffStat(agent.workspace, agent.baseRevision),
     getCompletions,
     getWorkspaceFiles,
     tryStartNextPending,

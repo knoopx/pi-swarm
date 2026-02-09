@@ -12,13 +12,18 @@ export async function createWorkspace(
   basePath: string,
   id: string,
   instruction: string,
-): Promise<string> {
+): Promise<{ workspace: string; baseRevision: string }> {
   const workspace = buildWorkspacePath(basePath, id);
   await Bun.$`mkdir -p ${basePath}/.pi/swarm/workspaces`.quiet();
   // Use -r default@ to make the new workspace's change descend from the default workspace's current change
   // Without this, the new workspace would be a sibling (same parent) instead of a child
   await Bun.$`cd ${basePath} && jj workspace add ${workspace} --name ${id} -m ${instruction} -r default@`.quiet();
-  return workspace;
+  // Get the base revision (parent of the current change in the new workspace)
+  const baseRevision =
+    await Bun.$`cd ${workspace} && jj log -r @- -T 'change_id' --no-graph`
+      .quiet()
+      .then((r) => r.stdout.toString().trim());
+  return { workspace, baseRevision };
 }
 
 export async function getWorkspaceFiles(
@@ -39,33 +44,45 @@ export async function getWorkspaceFiles(
   }
 }
 
-export async function getModifiedFiles(workspace: string): Promise<string[]> {
+export async function getModifiedFiles(
+  workspace: string,
+  baseRevision?: string,
+): Promise<string[]> {
   try {
-    // Compare agent workspace against default workspace to show all changes made by the agent
+    // Compare agent workspace against base revision to show all changes made by the agent
+    const base = baseRevision || "default@";
     const result =
-      await Bun.$`cd ${workspace} && jj diff --name-only --from default@ --to @`.quiet();
+      await Bun.$`cd ${workspace} && jj diff --name-only --from ${base} --to @`.quiet();
     return result.stdout.toString().split("\n").filter(Boolean);
   } catch {
     return [];
   }
 }
 
-export async function getDiffStat(workspace: string): Promise<string> {
+export async function getDiffStat(
+  workspace: string,
+  baseRevision?: string,
+): Promise<string> {
   try {
-    // Compare agent workspace against default workspace to show all changes made by the agent
+    // Compare agent workspace against base revision to show all changes made by the agent
+    const base = baseRevision || "default@";
     const result =
-      await Bun.$`cd ${workspace} && jj diff --stat --from default@ --to @`.quiet();
+      await Bun.$`cd ${workspace} && jj diff --stat --from ${base} --to @`.quiet();
     return result.stdout.toString();
   } catch {
     return "";
   }
 }
 
-export async function getDiff(workspace: string): Promise<string> {
+export async function getDiff(
+  workspace: string,
+  baseRevision?: string,
+): Promise<string> {
   try {
-    // Compare agent workspace against default workspace to show all changes made by the agent
+    // Compare agent workspace against base revision to show all changes made by the agent
+    const base = baseRevision || "default@";
     const result =
-      await Bun.$`cd ${workspace} && jj diff --git --from default@ --to @`.quiet();
+      await Bun.$`cd ${workspace} && jj diff --git --from ${base} --to @`.quiet();
     return result.stdout.toString();
   } catch {
     return "";

@@ -55,6 +55,7 @@ function createTestAgent(overrides: Partial<Agent> = {}): Agent {
     diffStat: "",
     model: "test-model",
     provider: "test-provider",
+    baseRevision: "abc123",
     ...overrides,
   };
 }
@@ -144,6 +145,7 @@ describe("Core", () => {
             "/workspace",
             "anthropic",
             "claude-3",
+            "base123",
           );
 
           expect(agent.id).toBe("abc123");
@@ -164,6 +166,7 @@ describe("Core", () => {
             "/base",
             "provider",
             "model",
+            "base123",
           );
           expect(agent.status).toBe("pending");
         });
@@ -177,6 +180,7 @@ describe("Core", () => {
             "/base",
             "provider",
             "model",
+            "base123",
           );
           expect(agent.output).toBe("");
         });
@@ -190,6 +194,7 @@ describe("Core", () => {
             "/base",
             "provider",
             "model",
+            "base123",
           );
           expect(agent.createdAt).toBeTruthy();
           expect(agent.updatedAt).toBeTruthy();
@@ -209,6 +214,7 @@ describe("Core", () => {
             "/base",
             "provider",
             "model",
+            "base123",
           );
           expect(agent.name).toBe("unnamed");
         });
@@ -226,6 +232,7 @@ describe("Core", () => {
             "/base",
             "provider",
             "model",
+            "base123",
           );
           expect(agent.instruction).toBe("");
         });

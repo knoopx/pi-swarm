@@ -21,7 +21,7 @@ export interface HandlerContext<T extends Agent = Agent> {
     basePath: string,
     id: string,
     instruction: string,
-  ) => Promise<string>;
+  ) => Promise<{ workspace: string; baseRevision: string }>;
   getDefaultModel: () => { provider: string; modelId: string };
   startAgent: (agent: T) => Promise<void>;
   stopAgent: (agent: T) => Promise<void>;
@@ -35,9 +35,9 @@ export interface HandlerContext<T extends Agent = Agent> {
   setAgentModel: (agent: T, provider: string, modelId: string) => Promise<void>;
   deleteAgent: (agent: T) => Promise<void>;
   mergeAgent: (agent: T) => Promise<{ success: boolean; error?: string }>;
-  getDiff: (workspace: string) => Promise<string>;
-  getModifiedFiles: (workspace: string) => Promise<string[]>;
-  getDiffStat: (workspace: string) => Promise<string>;
+  getDiff: (agent: T) => Promise<string>;
+  getModifiedFiles: (agent: T) => Promise<string[]>;
+  getDiffStat: (agent: T) => Promise<string>;
   getCompletions: () => unknown;
   getWorkspaceFiles: (
     workspace: string,
@@ -108,7 +108,7 @@ type CommandHandler = (
 const handleCreateAgent: CommandHandler = async (ctx, ws, id, message) => {
   const agentId = generateId();
   const instruction = (message.instruction as string) || "";
-  const workspace = await ctx.createWorkspace(
+  const { workspace, baseRevision } = await ctx.createWorkspace(
     ctx.basePath,
     agentId,
     instruction,
@@ -138,6 +138,7 @@ const handleCreateAgent: CommandHandler = async (ctx, ws, id, message) => {
     diffStat: "",
     provider,
     model: modelId,
+    baseRevision,
   };
 
   ctx.agents.set(agentId, agent);
@@ -208,7 +209,7 @@ const handleSetModel: CommandHandler = async (ctx, ws, id, message) => {
 const handleGetDiff: CommandHandler = async (ctx, ws, id, message) => {
   const agent = requireAgent(ctx, ws, id, message.agentId);
   if (!agent) return;
-  const diff = await ctx.getDiff(agent.workspace);
+  const diff = await ctx.getDiff(agent);
   sendResponse(ws, id, true, { diff });
 };
 
@@ -238,8 +239,8 @@ const handleFetchAgent: CommandHandler = async (ctx, ws, id, message) => {
     diffStat: string;
   } = {
     ...serializeAgent(agent),
-    modifiedFiles: await ctx.getModifiedFiles(agent.workspace),
-    diffStat: await ctx.getDiffStat(agent.workspace),
+    modifiedFiles: await ctx.getModifiedFiles(agent),
+    diffStat: await ctx.getDiffStat(agent),
   };
   sendResponse(ws, id, true, agentData);
 };
