@@ -128,9 +128,6 @@ export function AgentWorkspace({
             {agent.status === "running" && (
               <div className="mt-2">
                 <Progress value={undefined} className="h-1 w-full" />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Agent is processing your request...
-                </p>
               </div>
             )}
             <p className="text-sm text-muted-foreground truncate max-w-lg hidden sm:block">
