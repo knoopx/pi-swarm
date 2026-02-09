@@ -238,13 +238,8 @@ function AgentListItem({
               {config.icon}
             </div>
             <div className="min-w-0 flex-1 overflow-hidden">
-              <div className="flex items-center gap-2 mb-0.5">
-                <Badge
-                  variant={config.variant}
-                  className="text-xs px-1.5 py-0 shrink-0"
-                >
-                  {config.label}
-                </Badge>
+              <div className="flex items-center gap-2">
+                <p className="sidebar-agent-name">{agent.instruction}</p>
                 {modifiedFilesCount > 0 && (
                   <Badge
                     variant="outline"
@@ -254,7 +249,6 @@ function AgentListItem({
                   </Badge>
                 )}
               </div>
-              <p className="sidebar-agent-name">{agent.instruction}</p>
               {lastOutput && (
                 <p className="sidebar-agent-description">{lastOutput}</p>
               )}
