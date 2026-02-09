@@ -261,6 +261,46 @@
   .sidebar-agent-description {
     @apply text-sm text-muted-foreground leading-relaxed line-clamp-2;
   }
+
+  .completable-textarea-wrapper {
+    @apply relative;
+  }
+
+  .completable-textarea-popover {
+    @apply p-0 w-full max-h-[300px] overflow-auto;
+  }
+
+  .completable-textarea-command {
+    @apply bg-transparent;
+  }
+
+  .completable-textarea-item {
+    @apply flex items-center gap-2 cursor-pointer;
+  }
+
+  .completable-textarea-item-selected {
+    @apply bg-accent;
+  }
+
+  .completable-textarea-item-icon {
+    @apply text-base0D;
+  }
+
+  .completable-textarea-item-name {
+    @apply font-mono text-sm text-base05;
+  }
+
+  .completable-textarea-item-description {
+    @apply text-xs truncate flex-1 text-base04;
+  }
+
+  .completable-textarea-item-source {
+    @apply text-[10px] uppercase text-base03;
+  }
+
+  .completable-textarea-item-content-selected {
+    @apply text-accent-foreground;
+  }
 }
 
 @keyframes animate-in {

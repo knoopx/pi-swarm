@@ -280,7 +280,7 @@ const CompletableTextarea = React.forwardRef<
     return (
       <Popover open={showCompletions} onOpenChange={setShowCompletions}>
         <PopoverTrigger asChild>
-          <div className={cn("relative", flexClasses)}>
+          <div className={cn("completable-textarea-wrapper", flexClasses)}>
             <Textarea
               ref={setRefs}
               value={value}
@@ -295,11 +295,11 @@ const CompletableTextarea = React.forwardRef<
         </PopoverTrigger>
         {showCompletions && filteredCompletions.length > 0 && (
           <PopoverContent
-            className="p-0 w-full max-h-[300px] overflow-auto"
+            className="completable-textarea-popover"
             align="start"
             sideOffset={4}
           >
-            <Command className="bg-transparent">
+            <Command className="completable-textarea-command">
               <CommandList>
                 <CommandEmpty>No completions found</CommandEmpty>
                 <CommandGroup>
@@ -311,25 +311,24 @@ const CompletableTextarea = React.forwardRef<
                         data-index={index}
                         onSelect={() => insertCompletion(item)}
                         className={cn(
-                          "flex items-center gap-2 cursor-pointer",
-                          isSelected && "bg-accent",
+                          "completable-textarea-item",
+                          isSelected && "completable-textarea-item-selected",
                         )}
                       >
                         <span
-                          className={
-                            isSelected
-                              ? "text-accent-foreground"
-                              : "text-base0D"
-                          }
+                          className={cn(
+                            "completable-textarea-item-icon",
+                            isSelected &&
+                              "completable-textarea-item-content-selected",
+                          )}
                         >
                           {getIcon(item.source)}
                         </span>
                         <span
                           className={cn(
-                            "font-mono text-sm",
-                            isSelected
-                              ? "text-accent-foreground"
-                              : "text-base05",
+                            "completable-textarea-item-name",
+                            isSelected &&
+                              "completable-textarea-item-content-selected",
                           )}
                         >
                           {activeTrigger}
@@ -338,10 +337,9 @@ const CompletableTextarea = React.forwardRef<
                         {item.description && (
                           <span
                             className={cn(
-                              "text-xs truncate flex-1",
-                              isSelected
-                                ? "text-accent-foreground"
-                                : "text-base04",
+                              "completable-textarea-item-description",
+                              isSelected &&
+                                "completable-textarea-item-content-selected",
                             )}
                           >
                             {item.description}
@@ -349,10 +347,9 @@ const CompletableTextarea = React.forwardRef<
                         )}
                         <span
                           className={cn(
-                            "text-[10px] uppercase",
-                            isSelected
-                              ? "text-accent-foreground"
-                              : "text-base03",
+                            "completable-textarea-item-source",
+                            isSelected &&
+                              "completable-textarea-item-content-selected",
                           )}
                         >
                           {getSourceLabel(item.source)}
