@@ -30,7 +30,7 @@ import { ConversationLog } from "./ConversationLog";
 import { ReviewMode, type ReviewComment } from "./ReviewMode";
 import { ModelSelector } from "./ModelSelector";
 import { CompletableTextarea } from "./CompletableTextarea";
-import { statusConfig, getVariantClass } from "../lib/status-config";
+import { statusConfig } from "../lib/status-config";
 import { parseModelString } from "../lib/shared";
 import type { AccumulatedUsage } from "../lib/conversation-state";
 import type { Agent, ModelInfo, CompletionItem } from "../types";
@@ -93,14 +93,10 @@ export function AgentWorkspace({
       {/* Agent Header */}
       <div className="h-16 lg:h-14 border-b bg-gradient-to-r from-card to-card/80 backdrop-blur-sm flex items-center justify-between px-4 shrink-0 shadow-sm">
         <div className="flex items-center gap-4 min-w-0 flex-1">
-          <div
-            className={`p-3 rounded-xl shadow-sm ${getVariantClass("agent-status-icon", statusConfig[agent.status].variant)}`}
-          >
-            <StatusIndicator
-              status={statusConfig[agent.status].status}
-              size="default"
-            />
-          </div>
+          <StatusIndicator
+            status={statusConfig[agent.status].status}
+            size="lg"
+          />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3 mb-1">
               <h2 className="font-bold truncate text-base lg:text-lg text-foreground">

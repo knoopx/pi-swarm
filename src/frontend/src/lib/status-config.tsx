@@ -55,45 +55,21 @@ export const statusConfig: Record<Agent["status"], StatusConfig> = {
   },
 };
 
-const variantClassMap: Record<
-  string,
-  Record<StatusVariant | "fallback", string>
-> = {
-  "agent-card-border": {
-    default: "border-l-base0A",
-    secondary: "border-l-base04",
-    destructive: "border-l-base08",
-    outline: "border-l-base04",
-    success: "border-l-base0B",
-    warning: "border-l-base0C",
-    fallback: "border-l-base03",
-  },
-  "agent-status-icon": {
-    default: "bg-base02",
-    secondary: "bg-base02",
-    destructive: "bg-base02",
-    outline: "bg-base02",
-    success: "bg-base02",
-    warning: "bg-base02",
-    fallback: "bg-base02",
-  },
-  "sidebar-agent-icon": {
-    default: "bg-base02",
-    secondary: "bg-base02",
-    destructive: "bg-base02",
-    outline: "bg-base02",
-    success: "bg-base02",
-    warning: "bg-base02",
-    fallback: "bg-base02",
-  },
+const borderVariantMap: Record<StatusVariant | "fallback", string> = {
+  default: "border-l-base0A",
+  secondary: "border-l-base04",
+  destructive: "border-l-base08",
+  outline: "border-l-base04",
+  success: "border-l-base0B",
+  warning: "border-l-base0C",
+  fallback: "border-l-base03",
 };
 
 export function getVariantClass(
-  prefix: "agent-card-border" | "agent-status-icon" | "sidebar-agent-icon",
+  prefix: "agent-card-border",
   variant: StatusVariant | undefined,
 ): string {
-  const classMap = variantClassMap[prefix];
-  return classMap[variant ?? "fallback"] ?? classMap.fallback;
+  return borderVariantMap[variant ?? "fallback"] ?? borderVariantMap.fallback;
 }
 
 export function sortAgents(agents: Agent[]): Agent[] {

@@ -88,11 +88,7 @@ export function AgentCard({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div
-              className={`p-2 rounded-lg ${getVariantClass("agent-status-icon", config.variant)}`}
-            >
-              <StatusIndicator status={config.status} size="sm" />
-            </div>
+            <StatusIndicator status={config.status} size="default" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-semibold truncate text-base">
