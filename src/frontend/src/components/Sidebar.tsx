@@ -181,6 +181,22 @@ export function Sidebar({
   );
 }
 
+function getLastOutputMessage(agent: Agent): string | null {
+  const events = agent.conversation.events;
+  // Find last text event from assistant
+  for (let i = events.length - 1; i >= 0; i--) {
+    const event = events[i];
+    if (event.type === "text" && event.role === "assistant") {
+      return event.content;
+    }
+  }
+  // Check pending text as fallback
+  if (agent.conversation.pendingText.trim()) {
+    return agent.conversation.pendingText.trim();
+  }
+  return null;
+}
+
 function AgentListItem({
   agent,
   isSelected,
@@ -192,6 +208,7 @@ function AgentListItem({
 }) {
   const config = statusConfig[agent.status];
   const modifiedFilesCount = agent.modifiedFiles?.length || 0;
+  const lastOutput = getLastOutputMessage(agent);
 
   return (
     <HoverCard>
@@ -222,7 +239,7 @@ function AgentListItem({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="sidebar-agent-name">{agent.name}</span>
+                <span className="sidebar-agent-name">{agent.instruction}</span>
                 <Badge variant={config.variant} className="text-xs px-1.5 py-0">
                   {config.label}
                 </Badge>
@@ -232,7 +249,9 @@ function AgentListItem({
                   </Badge>
                 )}
               </div>
-              <p className="sidebar-agent-description">{agent.instruction}</p>
+              {lastOutput && (
+                <p className="sidebar-agent-description">{lastOutput}</p>
+              )}
             </div>
           </div>
         </button>
