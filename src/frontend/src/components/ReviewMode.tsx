@@ -249,17 +249,18 @@ export function ReviewMode({
     [files, comments],
   );
 
-  // Initialize tree with top-level directories expanded
+  // Initialize tree with all directories expanded
   useMemo(() => {
     if (files.length > 0 && treeExpandedPaths.size === 0) {
-      const topLevelPaths = new Set<string>();
+      const allDirPaths = new Set<string>();
       files.forEach((file) => {
         const parts = file.path.split("/");
-        if (parts.length > 1) {
-          topLevelPaths.add(parts[0]);
+        for (let i = 1; i < parts.length; i++) {
+          const dirPath = parts.slice(0, i).join("/");
+          allDirPaths.add(dirPath);
         }
       });
-      setTreeExpandedPaths(topLevelPaths);
+      setTreeExpandedPaths(allDirPaths);
     }
   }, [files]);
 
