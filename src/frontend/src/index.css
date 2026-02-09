@@ -201,7 +201,7 @@
 
   /* Sidebar Styles */
   .sidebar {
-    @apply w-80 lg:w-96 border-r bg-base01/30 flex flex-col shrink-0;
+    @apply w-80 lg:w-96 border-r bg-base01/30 flex flex-col shrink-0 overflow-hidden;
   }
 
   .sidebar-form {
@@ -217,7 +217,7 @@
   }
 
   .sidebar-agent-list {
-    @apply flex-1 overflow-auto;
+    @apply flex-1 overflow-auto w-full;
   }
 
   .sidebar-loading {

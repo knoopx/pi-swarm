@@ -165,7 +165,7 @@ export function Sidebar({
             </p>
           </div>
         ) : (
-          <div className="p-4 space-y-1">
+          <div className="p-4 space-y-1 w-full max-w-full overflow-hidden">
             {sortedAgents.map((agent) => (
               <AgentListItem
                 key={agent.id}
