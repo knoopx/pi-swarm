@@ -14,7 +14,7 @@ import {
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Progress } from "./ui/progress";
+
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
   AlertDialog,
@@ -124,11 +124,6 @@ export function AgentWorkspace({
                 </Badge>
               )}
             </div>
-            {agent.status === "running" && (
-              <div className="mt-2">
-                <Progress value={undefined} className="h-1 w-full" />
-              </div>
-            )}
             <p className="text-sm text-muted-foreground truncate max-w-lg hidden sm:block">
               {agent.instruction.slice(0, 120)}
               {agent.instruction.length > 120 ? "..." : ""}
