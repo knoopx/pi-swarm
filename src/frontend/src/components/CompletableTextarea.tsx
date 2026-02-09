@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { Textarea } from "./ui/textarea";
 import {
   Command,
@@ -58,6 +58,7 @@ const CompletableTextarea = React.forwardRef<
     const [activeTrigger, setActiveTrigger] = useState<TriggerType>(null);
     const [triggerPosition, setTriggerPosition] = useState(0);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const listRef = useRef<HTMLDivElement | null>(null);
 
     // Combine refs
     const setRefs = useCallback(
@@ -71,6 +72,16 @@ const CompletableTextarea = React.forwardRef<
       },
       [ref],
     );
+
+    // Scroll selected item into view
+    useEffect(() => {
+      if (showCompletions && listRef.current) {
+        const item = listRef.current.querySelector(
+          `[data-index="${selectedIndex}"]`,
+        );
+        item?.scrollIntoView({ block: "nearest" });
+      }
+    }, [selectedIndex, showCompletions]);
 
     // Get active completions based on trigger type
     const activeCompletions = useMemo(() => {
@@ -152,22 +163,6 @@ const CompletableTextarea = React.forwardRef<
       },
       [onChange, checkForTrigger],
     );
-
-    // Handle clicking on textarea
-    const handleClick = useCallback(() => {
-      setShowCompletions(false);
-      setSearchQuery("");
-      setActiveTrigger(null);
-    }, []);
-
-    const handleBlur = useCallback(() => {
-      // Delay closing to allow popover item clicks to register
-      setTimeout(() => {
-        setShowCompletions(false);
-        setSearchQuery("");
-        setActiveTrigger(null);
-      }, 150);
-    }, []);
 
     // Insert completion
     const insertCompletion = useCallback(
@@ -303,9 +298,7 @@ const CompletableTextarea = React.forwardRef<
               ref={setRefs}
               value={value}
               onChange={handleChange}
-              onClick={handleClick}
               onKeyDown={handleKeyDown}
-              onBlur={handleBlur}
               className={textareaClasses}
               disabled={disabled}
               {...props}
@@ -314,12 +307,17 @@ const CompletableTextarea = React.forwardRef<
         </PopoverTrigger>
         {showCompletions && filteredCompletions.length > 0 && (
           <PopoverContent
-            className="completable-textarea-popover"
+            className="completable-textarea-popover p-0 w-auto max-w-[600px]"
             align="start"
             sideOffset={4}
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            onCloseAutoFocus={(e) => e.preventDefault()}
           >
             <Command className="completable-textarea-command">
-              <CommandList>
+              <CommandList
+                ref={listRef}
+                className="max-h-none overflow-visible"
+              >
                 <CommandEmpty>No completions found</CommandEmpty>
                 <CommandGroup>
                   {filteredCompletions.map((item, index) => {
