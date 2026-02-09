@@ -341,20 +341,68 @@ export function ReviewMode({
 
   return (
     <div className={`flex ${className}`}>
-      {/* File Tree */}
-      <div className="w-80 flex flex-col border-r bg-muted/20">
-        <div className="p-2 border-b">
-          <span className="text-sm font-medium">Files</span>
+      {/* Sidebar */}
+      <div className="w-80 flex flex-col border-r bg-muted/20 shrink-0">
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className="p-2 border-b">
+            <span className="text-sm font-medium">Files</span>
+          </div>
+          <ScrollArea className="flex-1">
+            <FileTree
+              files={fileTreeData}
+              expandedPaths={treeExpandedPaths}
+              onToggleExpand={handleTreeToggleExpand}
+              onSelectFile={handleSelectFile}
+              selectedFile={selectedFile}
+            />
+          </ScrollArea>
         </div>
-        <ScrollArea className="flex-1">
-          <FileTree
-            files={fileTreeData}
-            expandedPaths={treeExpandedPaths}
-            onToggleExpand={handleTreeToggleExpand}
-            onSelectFile={handleSelectFile}
-            selectedFile={selectedFile}
-          />
-        </ScrollArea>
+
+        <div className="flex flex-col border-t bg-card/30 max-h-[45%] min-h-[200px]">
+          <div className="p-3 border-b flex items-center justify-between">
+            <span className="font-medium">Review Comments</span>
+            <Badge variant="outline">{comments.length}</Badge>
+          </div>
+
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-2 space-y-2">
+              {comments.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No comments yet
+                </p>
+              ) : (
+                comments.map((c) => (
+                  <div
+                    key={c.id}
+                    className={`p-2 rounded border ${typeColors[c.type]}`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <span className="text-xs font-mono truncate">
+                        {c.file}:{c.lineNumber}
+                      </span>
+                      <button
+                        onClick={() => removeComment(c.id)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <p className="text-sm">{c.comment}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+
+          {comments.length > 0 && (
+            <div className="p-3 border-t">
+              <Button onClick={handleSubmit} className="w-full">
+                <Send className="h-4 w-4 mr-2" />
+                Send {comments.length} comment{comments.length !== 1 ? "s" : ""}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Diff View */}
@@ -364,9 +412,6 @@ export function ReviewMode({
             {files.length} file{files.length !== 1 ? "s" : ""} changed
           </span>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              Click + to add comment
-            </span>
             <ButtonGroup>
               <Button
                 variant={viewMode === "unified" ? "secondary" : "ghost"}
@@ -457,53 +502,6 @@ export function ReviewMode({
             ))}
           </div>
         </ScrollArea>
-      </div>
-
-      {/* Comments Panel */}
-      <div className="w-80 flex flex-col bg-card/30 shrink-0">
-        <div className="p-3 border-b flex items-center justify-between">
-          <span className="font-medium">Review Comments</span>
-          <Badge variant="outline">{comments.length}</Badge>
-        </div>
-
-        <ScrollArea className="flex-1">
-          <div className="p-2 space-y-2">
-            {comments.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Click + on any line to add a comment
-              </p>
-            ) : (
-              comments.map((c) => (
-                <div
-                  key={c.id}
-                  className={`p-2 rounded border ${typeColors[c.type]}`}
-                >
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <span className="text-xs font-mono truncate">
-                      {c.file}:{c.lineNumber}
-                    </span>
-                    <button
-                      onClick={() => removeComment(c.id)}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                  <p className="text-sm">{c.comment}</p>
-                </div>
-              ))
-            )}
-          </div>
-        </ScrollArea>
-
-        {comments.length > 0 && (
-          <div className="p-3 border-t">
-            <Button onClick={handleSubmit} className="w-full">
-              <Send className="h-4 w-4 mr-2" />
-              Send {comments.length} comment{comments.length !== 1 ? "s" : ""}
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
