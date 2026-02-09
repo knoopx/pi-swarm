@@ -14,6 +14,7 @@ import { Textarea } from "./ui/textarea";
 import { ScrollArea } from "./ui/scroll-area";
 import { Badge } from "./ui/badge";
 import { ButtonGroup } from "./ui/button-group";
+import { FileTree } from "./FileTree";
 
 interface ReviewModeProps {
   diff: string;
@@ -232,14 +233,51 @@ export function ReviewMode({
     useState<ReviewComment["type"]>("issue");
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>("unified");
+  const [selectedFile, setSelectedFile] = useState<string | undefined>();
+  const [treeExpandedPaths, setTreeExpandedPaths] = useState<Set<string>>(
+    new Set(),
+  );
 
   const files = useMemo(() => parseDiff(diff), [diff]);
 
+  const fileTreeData = useMemo(
+    () =>
+      files.map((file) => ({
+        path: file.path,
+        commentCount: comments.filter((c) => c.file === file.path).length,
+      })),
+    [files, comments],
+  );
+
+  // Initialize tree with top-level directories expanded
   useMemo(() => {
-    if (files.length > 0 && expandedFiles.size === 0) {
-      setExpandedFiles(new Set(files.map((f) => f.path)));
+    if (files.length > 0 && treeExpandedPaths.size === 0) {
+      const topLevelPaths = new Set<string>();
+      files.forEach((file) => {
+        const parts = file.path.split("/");
+        if (parts.length > 1) {
+          topLevelPaths.add(parts[0]);
+        }
+      });
+      setTreeExpandedPaths(topLevelPaths);
     }
   }, [files]);
+
+  const handleTreeToggleExpand = (path: string) => {
+    const next = new Set(treeExpandedPaths);
+    if (next.has(path)) {
+      next.delete(path);
+    } else {
+      next.add(path);
+    }
+    setTreeExpandedPaths(next);
+  };
+
+  const handleSelectFile = (path: string) => {
+    setSelectedFile(path);
+    // Auto-expand the file in the diff view
+    setExpandedFiles((prev) => new Set([...prev, path]));
+  };
 
   const toggleFile = (path: string) => {
     const next = new Set(expandedFiles);
@@ -301,6 +339,22 @@ export function ReviewMode({
 
   return (
     <div className={`flex ${className}`}>
+      {/* File Tree */}
+      <div className="w-64 flex flex-col border-r bg-muted/20">
+        <div className="p-2 border-b">
+          <span className="text-sm font-medium">Files</span>
+        </div>
+        <ScrollArea className="flex-1">
+          <FileTree
+            files={fileTreeData}
+            expandedPaths={treeExpandedPaths}
+            onToggleExpand={handleTreeToggleExpand}
+            onSelectFile={handleSelectFile}
+            selectedFile={selectedFile}
+          />
+        </ScrollArea>
+      </div>
+
       {/* Diff View */}
       <div className="flex-1 flex flex-col overflow-hidden border-r">
         <div className="p-2 border-b bg-muted/30 flex items-center justify-between">
