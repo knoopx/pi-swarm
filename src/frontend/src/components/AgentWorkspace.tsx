@@ -15,7 +15,7 @@ import {
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-
+import { StatusIndicator } from "./ui/status-indicator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
   AlertDialog,
@@ -33,6 +33,7 @@ import { ModelSelector } from "./ModelSelector";
 import { CompletableTextarea } from "./CompletableTextarea";
 
 import { parseModelString } from "../lib/shared";
+import { statusConfig } from "../lib/status-config";
 import type { AccumulatedUsage } from "../lib/conversation-state";
 import type { Agent, ModelInfo, CompletionItem } from "../types";
 
@@ -93,6 +94,10 @@ export function AgentWorkspace({
     <>
       {/* Agent Header */}
       <header className="h-12 border-b bg-card/80 flex items-center gap-3 px-4 shrink-0">
+        <StatusIndicator
+          status={statusConfig[agent.status].status}
+          size="default"
+        />
         <h2 className="font-semibold truncate text-sm flex-1">{agent.name}</h2>
         {changedFilesCount > 0 && (
           <Badge

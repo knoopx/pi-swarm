@@ -1,15 +1,12 @@
-import { Bot, Wifi, WifiOff, Menu, Activity, Zap } from "lucide-react";
+import { Bot, Wifi, WifiOff, Menu, Zap } from "lucide-react";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
-import { Badge } from "./ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "../lib/utils";
 
 interface AppHeaderProps {
   cwd: string | null;
   connected: boolean;
-  agentCount: number;
-  runningCount: number;
   maxConcurrency: number;
   onMaxConcurrencyChange: (value: number) => void;
   onToggleSidebar: () => void;
@@ -18,8 +15,6 @@ interface AppHeaderProps {
 export function AppHeader({
   cwd,
   connected,
-  agentCount,
-  runningCount,
   maxConcurrency,
   onMaxConcurrencyChange,
   onToggleSidebar,
@@ -74,22 +69,6 @@ export function AppHeader({
           </TooltipTrigger>
           <TooltipContent>Max concurrent agents</TooltipContent>
         </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="flex items-center gap-1.5 text-xs text-base04">
-              <Activity className="h-3.5 w-3.5" />
-              <span className="text-base05 font-medium">{agentCount}</span>
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>Total agents</TooltipContent>
-        </Tooltip>
-
-        {runningCount > 0 && (
-          <Badge variant="running" className="text-xs px-2 py-0.5">
-            {runningCount} running
-          </Badge>
-        )}
 
         <Tooltip>
           <TooltipTrigger asChild>

@@ -71,7 +71,6 @@ export default function App() {
   const isSelectedSpecAgent = selectedAgent
     ? isSpecAgent(selectedAgent)
     : false;
-  const runningCount = agents.filter((a) => a.status === "running").length;
 
   useEffect(() => {
     if (!selectedAgent) return;
@@ -240,8 +239,6 @@ Output ONLY the improved task specification, ready to be used as instructions fo
         <AppHeader
           cwd={cwd}
           connected={connected}
-          agentCount={agents.length}
-          runningCount={runningCount}
           maxConcurrency={maxConcurrency}
           onMaxConcurrencyChange={setMaxConcurrency}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
