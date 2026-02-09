@@ -71,6 +71,36 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        shimmer: "shimmer 2s linear infinite",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite alternate",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        shimmer: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
+        },
+        "pulse-glow": {
+          from: {
+            boxShadow:
+              "0 0 5px var(--tw-ring-color), 0 0 10px var(--tw-ring-color), 0 0 15px var(--tw-ring-color)",
+          },
+          to: {
+            boxShadow:
+              "0 0 10px var(--tw-ring-color), 0 0 20px var(--tw-ring-color), 0 0 30px var(--tw-ring-color)",
+          },
+        },
+      },
     },
   },
   plugins: [require("@tailwindcss/typography")],
