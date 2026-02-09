@@ -495,22 +495,6 @@ export function EmptyState() {
           agent works in its own isolated workspace and can be reviewed before
           merging.
         </p>
-        <div className="space-y-2 text-xs text-muted-foreground">
-          <div className="flex items-center justify-center gap-4">
-            <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs">
-                Enter
-              </kbd>
-              <span>to start a task</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs">
-                ⌘K
-              </kbd>
-              <span>for commands</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

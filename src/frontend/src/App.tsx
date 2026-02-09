@@ -234,6 +234,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
           setActiveTab((prev) => (prev === "review" ? "output" : "review"))
         }
         showReview={activeTab === "review"}
+        onRefreshFiles={fetchWorkspaceFiles}
       />
 
       <div className="h-screen flex flex-col bg-background">
