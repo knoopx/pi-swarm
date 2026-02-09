@@ -239,7 +239,9 @@ function AgentListItem({
             </div>
             <div className="min-w-0 flex-1 overflow-hidden">
               <div className="flex items-center gap-2">
-                <p className="sidebar-agent-name">{agent.instruction}</p>
+                <p className="sidebar-agent-name min-w-0 flex-1">
+                  {agent.instruction}
+                </p>
                 {modifiedFilesCount > 0 && (
                   <Badge
                     variant="outline"
