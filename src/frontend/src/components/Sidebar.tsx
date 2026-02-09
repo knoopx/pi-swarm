@@ -237,9 +237,9 @@ function AgentListItem({
             >
               {config.icon}
             </div>
-            <div className="min-w-0 flex-1 overflow-hidden">
-              <div className="flex items-center gap-2 min-w-0">
-                <p className="sidebar-agent-name min-w-0 flex-1">
+            <div className="min-w-0 flex-1 overflow-hidden w-0">
+              <div className="flex items-center gap-2">
+                <p className="truncate text-sm font-semibold leading-tight flex-1 min-w-0">
                   {agent.instruction}
                 </p>
                 {modifiedFilesCount > 0 && (
@@ -252,7 +252,9 @@ function AgentListItem({
                 )}
               </div>
               {lastOutput && (
-                <p className="sidebar-agent-description">{lastOutput}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {lastOutput}
+                </p>
               )}
             </div>
           </div>
