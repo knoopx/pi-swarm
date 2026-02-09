@@ -108,12 +108,7 @@
     @apply relative flex items-center justify-center w-9 h-9 rounded-lg;
     @apply bg-gradient-to-br from-base07/20 via-base07/10 to-transparent;
     @apply border border-base07/30 text-base07;
-    @apply shadow-[0_0_12px_rgba(250,208,0,0.15)];
     @apply transition-all duration-300;
-  }
-
-  .app-header-logo:hover {
-    @apply shadow-[0_0_16px_rgba(250,208,0,0.25)];
   }
 
   .app-header-logo-pulse {
