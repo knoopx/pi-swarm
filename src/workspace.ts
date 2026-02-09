@@ -108,8 +108,7 @@ export async function setOrCreateChange(
 ): Promise<void> {
   const isEmpty = await isCurrentChangeEmpty(workspace);
   if (isEmpty) {
-    // Re-use current change and update its description
-    await Bun.$`cd ${workspace} && jj describe -m ${instruction}`.quiet();
+    // Re-use current change, keep existing description
   } else {
     // Create a new change
     await Bun.$`cd ${workspace} && jj new -m ${instruction}`.quiet();
