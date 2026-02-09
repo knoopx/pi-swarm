@@ -32,7 +32,6 @@ export function AppHeader({
 
       <div className="app-header-logo">
         <Bot className="h-5 w-5" />
-        {connected && <span className="app-header-logo-pulse" />}
       </div>
 
       <div className="flex flex-col ml-3">

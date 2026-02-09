@@ -391,25 +391,6 @@ function InstructInput({
         rows={1}
         disabled={disabled}
       />
-      <div className="workspace-instruct-buttons">
-        {onQueue && (
-          <Button
-            onClick={handleQueue}
-            disabled={disabled || !value.trim()}
-            variant="outline"
-            className="workspace-instruct-queue-btn"
-          >
-            Queue
-          </Button>
-        )}
-        <Button
-          onClick={handleSubmit}
-          disabled={disabled || !value.trim()}
-          className="workspace-instruct-send-btn"
-        >
-          Send
-        </Button>
-      </div>
     </div>
   );
 }
