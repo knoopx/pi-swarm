@@ -4,25 +4,33 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "src/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80",
-        secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive:
-          "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
-        outline: "text-foreground",
-        success:
-          "border-transparent bg-base0B/20 text-base0B hover:bg-base0B/30",
-        warning:
-          "border-transparent bg-base09/20 text-base09 hover:bg-base09/30",
+          "border-transparent bg-primary/90 text-primary-foreground shadow-sm",
+        secondary: "border-base03 bg-base02/50 text-base05",
+        destructive: "border-transparent bg-destructive/20 text-destructive",
+        outline: "border-base03 text-base04 bg-transparent",
+        success: "border-transparent bg-base0B/15 text-base0B",
+        warning: "border-transparent bg-base09/15 text-base09",
+        info: "border-transparent bg-base0C/15 text-base0C",
+        running: "border-transparent bg-base0C/15 text-base0C animate-pulse",
+        pending: "border-base03 bg-base02/30 text-base04",
+        completed: "border-transparent bg-base0B/15 text-base0B",
+        stopped: "border-transparent bg-base09/15 text-base09",
+        error: "border-transparent bg-base08/15 text-base08",
+      },
+      size: {
+        default: "px-2.5 py-0.5",
+        sm: "px-2 py-px text-[10px]",
+        lg: "px-3 py-1 text-xs",
       },
     },
     defaultVariants: {
       variant: "default",
+      size: "default",
     },
   },
 );
@@ -32,9 +40,12 @@ export interface BadgeProps
     React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof badgeVariants> {}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
+function Badge({ className, variant, size, ...props }: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div
+      className={cn(badgeVariants({ variant, size }), className)}
+      {...props}
+    />
   );
 }
 
