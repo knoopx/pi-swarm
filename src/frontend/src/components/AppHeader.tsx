@@ -1,4 +1,4 @@
-import { Bot, Wifi, WifiOff, Menu, Activity, Zap, Circle } from "lucide-react";
+import { Bot, Wifi, WifiOff, Menu, Activity, Zap, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
 import { Badge } from "./ui/badge";
@@ -65,7 +65,7 @@ export function AppHeader({
           <TooltipTrigger asChild>
             <div className="app-header-control-group">
               <div className="app-header-control-icon">
-                <Zap className="h-3.5 w-3.5" />
+                <Zap className="h-4 w-4" />
               </div>
               <div className="app-header-control-content">
                 <span className="app-header-control-label">Concurrency</span>
@@ -100,7 +100,7 @@ export function AppHeader({
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="app-header-stat">
-                <Activity className="h-3.5 w-3.5 text-base04" />
+                <Activity className="h-4 w-4 text-base04" />
                 <span className="app-header-stat-value">{agentCount}</span>
                 <span className="app-header-stat-label hidden sm:inline">
                   agents
@@ -112,7 +112,7 @@ export function AppHeader({
 
           {runningCount > 0 && (
             <Badge variant="running" className="app-header-running-badge">
-              <Circle className="h-1.5 w-1.5 fill-current animate-pulse" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               <span>{runningCount}</span>
               <span className="hidden sm:inline">running</span>
             </Badge>
@@ -134,9 +134,9 @@ export function AppHeader({
             >
               <span className="app-header-connection-indicator">
                 {connected ? (
-                  <Wifi className="h-3.5 w-3.5" />
+                  <Wifi className="h-4 w-4" />
                 ) : (
-                  <WifiOff className="h-3.5 w-3.5" />
+                  <WifiOff className="h-4 w-4" />
                 )}
               </span>
               <span className="hidden sm:inline">
