@@ -221,9 +221,9 @@ function AgentListItem({
               : "sidebar-agent-item-unselected"
           }`}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 w-full overflow-hidden">
             <div
-              className={`p-1.5 rounded-md transition-colors ${
+              className={`p-1.5 rounded-md transition-colors shrink-0 ${
                 config.variant === "default"
                   ? "sidebar-agent-icon-default"
                   : config.variant === "secondary"
@@ -238,7 +238,7 @@ function AgentListItem({
               {config.icon}
             </div>
             <div className="min-w-0 flex-1 overflow-hidden">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <p className="sidebar-agent-name min-w-0 flex-1">
                   {agent.instruction}
                 </p>
