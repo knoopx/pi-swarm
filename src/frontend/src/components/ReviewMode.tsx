@@ -341,7 +341,7 @@ export function ReviewMode({
   return (
     <div className={`flex ${className}`}>
       {/* File Tree */}
-      <div className="w-64 flex flex-col border-r bg-muted/20">
+      <div className="w-80 flex flex-col border-r bg-muted/20">
         <div className="p-2 border-b">
           <span className="text-sm font-medium">Files</span>
         </div>
