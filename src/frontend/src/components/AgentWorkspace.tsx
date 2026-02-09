@@ -77,6 +77,7 @@ export function AgentWorkspace({
   onModelChange,
 }: AgentWorkspaceProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [reviewComments, setReviewComments] = useState<ReviewComment[]>([]);
   const showInstructInput =
     agent.status === "running" ||
     agent.status === "completed" ||
@@ -130,9 +131,9 @@ export function AgentWorkspace({
             </TabsTrigger>
             <TabsTrigger value="review" className="gap-2">
               Review
-              {changedFilesCount > 0 && (
+              {reviewComments.length > 0 && (
                 <Badge variant="outline" className="px-1.5 py-0 text-xs">
-                  {changedFilesCount}
+                  {reviewComments.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -168,6 +169,7 @@ export function AgentWorkspace({
                   `Please address these code review comments:\n\n${reviewText}`,
                 );
               }}
+              onCommentsChange={setReviewComments}
               className="flex-1 rounded-lg border overflow-hidden"
             />
           </TabsContent>

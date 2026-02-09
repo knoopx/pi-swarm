@@ -181,11 +181,11 @@ Output ONLY the improved task specification, ready to be used as instructions fo
   const handleTabChange = useCallback(
     async (tab: string) => {
       setActiveTab(tab);
-      if (tab === "review" && selectedId && !diff) {
+      if (tab === "review" && selectedId) {
         await getDiff(selectedId);
       }
     },
-    [selectedId, diff, getDiff],
+    [selectedId, getDiff],
   );
 
   const handleMerge = useCallback(async () => {

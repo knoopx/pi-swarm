@@ -18,6 +18,7 @@ import { ButtonGroup } from "./ui/button-group";
 interface ReviewModeProps {
   diff: string;
   onSubmitReview: (comments: ReviewComment[]) => void;
+  onCommentsChange?: (comments: ReviewComment[]) => void;
   className?: string;
 }
 
@@ -217,6 +218,7 @@ type ViewMode = "unified" | "split";
 export function ReviewMode({
   diff,
   onSubmitReview,
+  onCommentsChange,
   className,
 }: ReviewModeProps) {
   const [comments, setComments] = useState<ReviewComment[]>([]);
@@ -261,19 +263,25 @@ export function ReviewMode({
       type: commentType,
     };
 
-    setComments([...comments, newComment]);
+    const newComments = [...comments, newComment];
+    setComments(newComments);
+    onCommentsChange?.(newComments);
     setActiveComment(null);
     setCommentText("");
   };
 
   const removeComment = (id: string) => {
-    setComments(comments.filter((c) => c.id !== id));
+    const newComments = comments.filter((c) => c.id !== id);
+    setComments(newComments);
+    onCommentsChange?.(newComments);
   };
 
   const handleSubmit = () => {
     if (comments.length === 0) return;
     onSubmitReview(comments);
-    setComments([]);
+    const newComments: ReviewComment[] = [];
+    setComments(newComments);
+    onCommentsChange?.(newComments);
   };
 
   const getLineComments = (file: string, lineNumber: number | null) => {
