@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Textarea } from "./ui/textarea";
 import {
   Command,
@@ -8,6 +8,7 @@ import {
   CommandItem,
   CommandList,
 } from "./ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { cn } from "src/lib/utils";
 import { FileText, Terminal, BookOpen, File } from "lucide-react";
 
@@ -56,10 +57,7 @@ const CompletableTextarea = React.forwardRef<
     const [searchQuery, setSearchQuery] = useState("");
     const [activeTrigger, setActiveTrigger] = useState<TriggerType>(null);
     const [triggerPosition, setTriggerPosition] = useState(0);
-    const [popupStyle, setPopupStyle] = useState<React.CSSProperties>({});
-    const containerRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-    const popupRef = useRef<HTMLDivElement>(null);
 
     // Combine refs
     const setRefs = useCallback(
@@ -238,67 +236,9 @@ const CompletableTextarea = React.forwardRef<
         selectedIndex,
         insertCompletion,
         onSubmit,
+        onQueue,
       ],
     );
-
-    // Close completions when clicking outside
-    useEffect(() => {
-      const handleClickOutside = (e: MouseEvent) => {
-        if (
-          containerRef.current &&
-          !containerRef.current.contains(e.target as Node)
-        ) {
-          setShowCompletions(false);
-        }
-      };
-
-      document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    // Calculate popup position based on available space
-    useEffect(() => {
-      if (showCompletions && containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const popupHeight = 300; // max-h-[300px]
-        const popupWidth = rect.width;
-        const margin = 4;
-
-        // Calculate vertical position
-        const spaceAbove = rect.top;
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const showBelow = spaceAbove < popupHeight && spaceBelow > spaceAbove;
-
-        // Calculate horizontal position - keep within viewport
-        let left = rect.left;
-        if (left + popupWidth > window.innerWidth) {
-          left = window.innerWidth - popupWidth - margin;
-        }
-        if (left < margin) {
-          left = margin;
-        }
-
-        setPopupStyle({
-          position: "fixed",
-          left: `${left}px`,
-          width: `${popupWidth}px`,
-          ...(showBelow
-            ? { top: `${rect.bottom + margin}px` }
-            : { bottom: `${window.innerHeight - rect.top + margin}px` }),
-        });
-      }
-    }, [showCompletions]);
-
-    // Scroll selected item into view
-    useEffect(() => {
-      if (showCompletions && popupRef.current) {
-        const selectedElement = popupRef.current.querySelector(
-          `[data-index="${selectedIndex}"]`,
-        );
-        selectedElement?.scrollIntoView({ block: "nearest" });
-      }
-    }, [selectedIndex, showCompletions]);
 
     const getIcon = (source: CompletionItem["source"]) => {
       switch (source) {
@@ -338,22 +278,26 @@ const CompletableTextarea = React.forwardRef<
       .join(" ");
 
     return (
-      <div ref={containerRef} className={cn("relative", flexClasses)}>
-        <Textarea
-          ref={setRefs}
-          value={value}
-          onChange={handleChange}
-          onClick={handleClick}
-          onKeyDown={handleKeyDown}
-          className={textareaClasses}
-          disabled={disabled}
-          {...props}
-        />
+      <Popover open={showCompletions} onOpenChange={setShowCompletions}>
+        <PopoverTrigger asChild>
+          <div className={cn("relative", flexClasses)}>
+            <Textarea
+              ref={setRefs}
+              value={value}
+              onChange={handleChange}
+              onClick={handleClick}
+              onKeyDown={handleKeyDown}
+              className={textareaClasses}
+              disabled={disabled}
+              {...props}
+            />
+          </div>
+        </PopoverTrigger>
         {showCompletions && filteredCompletions.length > 0 && (
-          <div
-            ref={popupRef}
-            style={popupStyle}
-            className="z-50 max-h-[300px] overflow-auto rounded-md border bg-popover p-1 shadow-md"
+          <PopoverContent
+            className="p-0 w-full max-h-[300px] overflow-auto"
+            align="start"
+            sideOffset={4}
           >
             <Command className="bg-transparent">
               <CommandList>
@@ -419,9 +363,9 @@ const CompletableTextarea = React.forwardRef<
                 </CommandGroup>
               </CommandList>
             </Command>
-          </div>
+          </PopoverContent>
         )}
-      </div>
+      </Popover>
     );
   },
 );
