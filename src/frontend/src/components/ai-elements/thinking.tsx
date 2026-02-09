@@ -11,15 +11,9 @@ export type ThinkingProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 export const Thinking = ({ className, children, ...props }: ThinkingProps) => (
-  <div
-    className={cn(
-      "flex w-full max-w-[95%] gap-2 text-sm text-muted-foreground italic",
-      className,
-    )}
-    {...props}
-  >
-    <Brain className="h-4 w-4 shrink-0 mt-0.5" />
-    <div className="flex-1">{children}</div>
+  <div className={cn("thinking", className)} {...props}>
+    <Brain className="thinking-icon" />
+    <div className="thinking-content">{children}</div>
   </div>
 );
 
@@ -27,9 +21,7 @@ export type ThinkingContentProps = ComponentProps<typeof MessageResponse>;
 
 export const ThinkingContent = memo(
   ({ className, ...props }: ThinkingContentProps) => (
-    <div
-      className={cn("[&>*:first-child]:mt-0 [&>*:last-child]:mb-0", className)}
-    >
+    <div className={cn("thinking-content-inner", className)}>
       <MessageResponse {...props} />
     </div>
   ),

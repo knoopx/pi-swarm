@@ -296,6 +296,678 @@
   .completable-textarea-item-content-selected {
     @apply text-base06;
   }
+
+  /* App Layout */
+  .app-layout {
+    @apply h-screen flex flex-col bg-background;
+  }
+
+  .app-main {
+    @apply flex-1 flex overflow-hidden;
+  }
+
+  .app-mobile-overlay {
+    @apply fixed inset-0 bg-black/50 lg:hidden z-40;
+  }
+
+  .app-main-content {
+    @apply flex-1 flex flex-col overflow-hidden bg-background;
+  }
+
+  /* Agent Workspace Styles */
+  .workspace-header {
+    @apply h-12 border-b bg-card/80 flex items-center gap-3 px-4 shrink-0;
+  }
+
+  .workspace-title {
+    @apply font-semibold truncate text-sm flex-1;
+  }
+
+  .workspace-badge-changed {
+    @apply text-xs px-1.5 py-0.5 bg-base09/10 text-base09 border-base09/20;
+  }
+
+  .workspace-tabs {
+    @apply flex-1 flex flex-col overflow-hidden;
+  }
+
+  .workspace-tabs-header {
+    @apply px-4 pt-4;
+  }
+
+  .workspace-tabs-list {
+    @apply w-fit bg-muted/50 p-1 shadow-sm border;
+  }
+
+  .workspace-tab-trigger {
+    @apply gap-2 px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all;
+  }
+
+  .workspace-tab-badge {
+    @apply px-2 py-0.5 text-xs bg-base09/10 text-base09 border-base09/20 ml-1;
+  }
+
+  .workspace-tabs-content {
+    @apply flex-1 overflow-hidden p-4 pt-3;
+  }
+
+  .workspace-tab-panel {
+    @apply h-full m-0 data-[state=active]:flex data-[state=active]:flex-col;
+  }
+
+  .workspace-conversation {
+    @apply flex-1 rounded-lg border bg-muted/30;
+  }
+
+  .workspace-review {
+    @apply flex-1 rounded-lg border overflow-hidden;
+  }
+
+  .workspace-instruct-bar {
+    @apply border-t bg-card/50 backdrop-blur-sm p-4 shrink-0 shadow-sm;
+  }
+
+  .workspace-instruct-container {
+    @apply flex gap-3 items-end;
+  }
+
+  .workspace-instruct-model {
+    @apply h-[48px] w-[180px] border-2 focus:border-base07/50 transition-colors shadow-sm;
+  }
+
+  .workspace-instruct-textarea {
+    @apply min-h-[48px] resize-none text-sm flex-1 border-2 focus:border-base07/50 focus:ring-2 focus:ring-base07/20 transition-all shadow-sm rounded-lg;
+  }
+
+  .workspace-instruct-buttons {
+    @apply flex gap-2;
+  }
+
+  .workspace-instruct-queue-btn {
+    @apply px-4 h-[48px] border-2 hover:bg-muted/50 transition-colors shadow-sm;
+  }
+
+  .workspace-instruct-send-btn {
+    @apply px-6 h-[48px] bg-base07 hover:bg-base07/90 transition-colors shadow-sm font-medium;
+  }
+
+  /* Empty State */
+  .empty-state {
+    @apply flex-1 flex items-center justify-center p-8;
+  }
+
+  .empty-state-container {
+    @apply text-center max-w-lg;
+  }
+
+  .empty-state-icon {
+    @apply flex items-center justify-center w-24 h-24 mx-auto mb-8 rounded-full bg-gradient-to-br from-base07/20 via-base07/10 to-base07/5 border-2 border-base07/10 shadow-xl;
+  }
+
+  .empty-state-icon svg {
+    @apply h-12 w-12 text-base07 drop-shadow-sm;
+  }
+
+  .empty-state-title {
+    @apply text-2xl font-bold mb-4 text-foreground;
+  }
+
+  .empty-state-description {
+    @apply text-muted-foreground text-base leading-relaxed mb-8 max-w-md mx-auto;
+  }
+
+  .empty-state-features {
+    @apply flex items-center justify-center gap-4 text-sm text-muted-foreground;
+  }
+
+  .empty-state-feature {
+    @apply flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg;
+  }
+
+  /* Usage Display */
+  .usage-display {
+    @apply flex items-center gap-3 text-xs text-muted-foreground min-w-[100px];
+  }
+
+  .usage-item {
+    @apply flex items-center gap-1;
+  }
+
+  /* ConversationLog Styles */
+  .conversation-loading {
+    @apply flex items-center justify-center gap-2 py-8 text-muted-foreground;
+  }
+
+  .conversation-system-message {
+    @apply flex items-center gap-2 px-3 py-2 rounded-md border text-sm;
+  }
+
+  .conversation-system-error {
+    @apply text-destructive border-destructive/30 bg-destructive/10;
+  }
+
+  .conversation-system-warning {
+    @apply text-base09 border-base09/30 bg-base09/10;
+  }
+
+  .conversation-system-info {
+    @apply text-muted-foreground border-border bg-muted/30;
+  }
+
+  /* FilesList Styles */
+  .files-list-empty {
+    @apply flex items-center justify-center h-full text-muted-foreground;
+  }
+
+  .files-list-container {
+    @apply p-3;
+  }
+
+  .files-list-summary {
+    @apply flex items-center justify-between mb-3 pb-3 border-b border-border;
+  }
+
+  .files-list-summary-title {
+    @apply text-sm font-medium;
+  }
+
+  .files-list-summary-stats {
+    @apply flex items-center gap-3 text-xs;
+  }
+
+  .files-list-additions {
+    @apply text-base0B;
+  }
+
+  .files-list-deletions {
+    @apply text-base08;
+  }
+
+  .files-list-items {
+    @apply space-y-1;
+  }
+
+  .files-list-item {
+    @apply flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/50;
+  }
+
+  .files-list-item-path {
+    @apply flex-1 min-w-0;
+  }
+
+  .files-list-item-path-inner {
+    @apply flex items-center gap-1 text-sm;
+  }
+
+  .files-list-item-dir {
+    @apply text-muted-foreground truncate;
+  }
+
+  .files-list-item-name {
+    @apply font-medium truncate;
+  }
+
+  .files-list-item-binary {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .change-bar {
+    @apply flex items-center gap-1;
+  }
+
+  .change-bar-count {
+    @apply text-xs text-muted-foreground w-8 text-right;
+  }
+
+  .change-bar-container {
+    @apply flex;
+  }
+
+  .change-bar-add {
+    @apply w-1.5 h-3 bg-base0B mr-px;
+  }
+
+  .change-bar-del {
+    @apply w-1.5 h-3 bg-base08 mr-px;
+  }
+
+  /* ReviewMode Styles */
+  .review-empty {
+    @apply flex items-center justify-center;
+  }
+
+  .review-container {
+    @apply flex;
+  }
+
+  .review-sidebar {
+    @apply w-80 flex flex-col border-r bg-muted/20 shrink-0;
+  }
+
+  .review-sidebar-header {
+    @apply p-2 border-b;
+  }
+
+  .review-sidebar-title {
+    @apply text-sm font-medium;
+  }
+
+  .review-comments-panel {
+    @apply flex flex-col border-t bg-card/30 max-h-[45%] min-h-[200px];
+  }
+
+  .review-comments-header {
+    @apply p-3 border-b flex items-center justify-between;
+  }
+
+  .review-comments-title {
+    @apply font-medium;
+  }
+
+  .review-comments-list {
+    @apply p-2 space-y-2;
+  }
+
+  .review-comments-empty {
+    @apply text-sm text-muted-foreground text-center py-4;
+  }
+
+  .review-comments-footer {
+    @apply p-3 border-t;
+  }
+
+  .review-diff-view {
+    @apply flex-1 flex flex-col overflow-hidden border-r;
+  }
+
+  .review-diff-header {
+    @apply p-2 border-b bg-muted/30 flex items-center justify-between;
+  }
+
+  .review-diff-title {
+    @apply text-sm font-medium;
+  }
+
+  .review-diff-controls {
+    @apply flex items-center gap-2;
+  }
+
+  .review-diff-content {
+    @apply p-2;
+  }
+
+  .review-file-card {
+    @apply mb-4 rounded-lg border overflow-hidden;
+  }
+
+  .review-file-header {
+    @apply w-full flex items-center gap-2 px-3 py-2 bg-muted/50 hover:bg-muted/70 text-left;
+  }
+
+  .review-file-name {
+    @apply font-mono text-sm flex-1 truncate;
+  }
+
+  .review-hunk {
+    @apply text-xs font-mono;
+  }
+
+  .review-hunk-header {
+    @apply px-3 py-1 bg-base0C/10 text-base0C text-xs;
+  }
+
+  .review-line {
+    @apply flex items-stretch hover:bg-muted/30;
+  }
+
+  .review-line-add {
+    @apply bg-base0B/10;
+  }
+
+  .review-line-remove {
+    @apply bg-base08/10;
+  }
+
+  .review-line-active {
+    @apply ring-1 ring-primary;
+  }
+
+  .review-line-number {
+    @apply w-12 px-2 py-0.5 text-right text-muted-foreground border-r border-border shrink-0;
+  }
+
+  .review-line-add-btn {
+    @apply w-6 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-primary/20 shrink-0;
+  }
+
+  .review-line-content {
+    @apply flex-1 px-2 py-0.5 whitespace-pre overflow-x-auto;
+  }
+
+  .review-line-comment-indicator {
+    @apply w-6 flex items-center justify-center shrink-0;
+  }
+
+  .review-comment-type-issue {
+    @apply bg-base08/20 text-base08 border-base08/30;
+  }
+
+  .review-comment-type-suggestion {
+    @apply bg-base0C/20 text-base0C border-base0C/30;
+  }
+
+  .review-comment-type-question {
+    @apply bg-base09/20 text-base09 border-base09/30;
+  }
+
+  .review-inline-comment {
+    @apply my-1 p-2 rounded border;
+  }
+
+  .review-comment-input {
+    @apply mx-2 my-2 p-2 rounded border bg-card;
+  }
+
+  .review-comment-type-selector {
+    @apply flex gap-1 mb-2;
+  }
+
+  .review-comment-type-btn {
+    @apply px-2 py-0.5 rounded text-xs;
+  }
+
+  .review-comment-type-btn-inactive {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  .review-comment-textarea {
+    @apply min-h-[60px] text-sm mb-2;
+  }
+
+  .review-comment-actions {
+    @apply flex gap-2;
+  }
+
+  /* Split View */
+  .review-split-line {
+    @apply flex;
+  }
+
+  .review-split-side {
+    @apply flex-1 flex items-stretch;
+  }
+
+  .review-split-side-left {
+    @apply border-r;
+  }
+
+  .review-split-line-number {
+    @apply w-10 px-1 py-0.5 text-right text-muted-foreground border-r border-border shrink-0 text-xs;
+  }
+
+  .review-split-add-btn {
+    @apply w-5 flex items-center justify-center opacity-0 hover:opacity-100 hover:bg-primary/20 shrink-0;
+  }
+
+  .review-split-content {
+    @apply flex-1 px-1 py-0.5 whitespace-pre overflow-x-auto;
+  }
+
+  /* FileTree Styles */
+  .file-tree-empty {
+    @apply flex flex-col items-center justify-center p-8 text-center;
+  }
+
+  .file-tree-empty-icon {
+    @apply h-12 w-12 text-muted-foreground/50 mb-4;
+  }
+
+  .file-tree-empty-text {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .file-tree-container {
+    @apply flex flex-col h-full;
+  }
+
+  .file-tree-search {
+    @apply p-2 border-b;
+  }
+
+  .file-tree-search-wrapper {
+    @apply relative;
+  }
+
+  .file-tree-search-icon {
+    @apply absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground;
+  }
+
+  .file-tree-search-input {
+    @apply pl-7 pr-7 h-7 text-sm;
+  }
+
+  .file-tree-search-clear {
+    @apply absolute right-0.5 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0;
+  }
+
+  .file-tree-content {
+    @apply flex-1 overflow-auto;
+  }
+
+  .file-tree-items {
+    @apply p-1;
+  }
+
+  .file-tree-node {
+    @apply flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-sm transition-colors;
+    @apply hover:bg-muted/60;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-muted/60;
+    @apply min-w-0;
+  }
+
+  .file-tree-node-selected {
+    @apply bg-primary/10 text-primary;
+  }
+
+  .file-tree-expand-btn {
+    @apply flex items-center justify-center w-4 h-4 flex-shrink-0;
+  }
+
+  .file-tree-expand-icon {
+    @apply h-3 w-3 text-muted-foreground;
+  }
+
+  .file-tree-folder-icon {
+    @apply h-4 w-4 text-blue-500 flex-shrink-0;
+  }
+
+  .file-tree-file-icon-wrapper {
+    @apply text-muted-foreground flex-shrink-0;
+  }
+
+  .file-tree-node-name {
+    @apply truncate flex-1 select-none;
+  }
+
+  /* ModelSelector Styles */
+  .model-selector-btn {
+    @apply justify-between font-mono text-xs;
+  }
+
+  .model-selector-btn-placeholder {
+    @apply text-muted-foreground;
+  }
+
+  .model-selector-popover {
+    @apply w-[280px] p-0 bg-card border-border;
+  }
+
+  .model-selector-item {
+    @apply font-mono text-xs truncate;
+  }
+
+  /* Thinking Styles */
+  .thinking {
+    @apply flex w-full max-w-[95%] gap-2 text-sm text-muted-foreground italic;
+  }
+
+  .thinking-icon {
+    @apply h-4 w-4 shrink-0 mt-0.5;
+  }
+
+  .thinking-content {
+    @apply flex-1;
+  }
+
+  .thinking-content-inner {
+    @apply [&>*:first-child]:mt-0 [&>*:last-child]:mb-0;
+  }
+
+  /* Tool Styles */
+  .tool {
+    @apply mb-4 w-full rounded-md border;
+  }
+
+  .tool-header {
+    @apply flex w-full items-center justify-between gap-4 p-3;
+  }
+
+  .tool-header-left {
+    @apply flex min-w-0 flex-1 items-center gap-2;
+  }
+
+  .tool-header-icon {
+    @apply size-4 shrink-0 text-muted-foreground;
+  }
+
+  .tool-header-title {
+    @apply shrink-0 font-medium text-sm;
+  }
+
+  .tool-header-preview {
+    @apply truncate text-muted-foreground text-xs;
+  }
+
+  .tool-header-right {
+    @apply flex shrink-0 items-center gap-2;
+  }
+
+  .tool-header-chevron {
+    @apply size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180;
+  }
+
+  .tool-content {
+    @apply space-y-4 p-4 text-popover-foreground outline-none;
+  }
+
+  .tool-section {
+    @apply space-y-2 overflow-hidden;
+  }
+
+  .tool-section-title {
+    @apply font-medium text-muted-foreground text-xs uppercase tracking-wide;
+  }
+
+  .tool-section-content {
+    @apply rounded-md bg-muted/50 overflow-hidden;
+  }
+
+  .tool-output {
+    @apply overflow-x-auto rounded-md text-xs [&_table]:w-full;
+  }
+
+  .tool-output-success {
+    @apply bg-muted/50 text-foreground;
+  }
+
+  .tool-output-error {
+    @apply bg-destructive/10 text-destructive;
+  }
+
+  .tool-output-error-text {
+    @apply p-3 font-mono whitespace-pre-wrap break-words;
+  }
+
+  .tool-output-pre {
+    @apply whitespace-pre-wrap break-words p-3 text-sm font-mono;
+  }
+
+  /* Code Block Styles */
+  .code-block {
+    @apply relative w-full overflow-hidden rounded-md bg-base01 text-base05;
+    @apply [&_pre]:!bg-transparent [&_pre]:overflow-auto [&_pre]:p-3 [&_pre]:text-xs [&_code]:font-mono;
+  }
+
+  .code-block-line-numbers {
+    @apply [&_code]:pl-8;
+  }
+
+  /* Conversation Styles */
+  .conversation {
+    @apply relative flex-1 overflow-y-hidden;
+  }
+
+  .conversation-content {
+    @apply flex flex-col gap-8 p-4;
+  }
+
+  .conversation-empty-state {
+    @apply flex size-full flex-col items-center justify-center gap-3 p-8 text-center;
+  }
+
+  .conversation-empty-title {
+    @apply font-medium text-sm;
+  }
+
+  .conversation-empty-description {
+    @apply text-muted-foreground text-sm;
+  }
+
+  .conversation-scroll-btn {
+    @apply absolute bottom-4 left-[50%] translate-x-[-50%] rounded-full dark:bg-background dark:hover:bg-muted;
+  }
+
+  .conversation-download-btn {
+    @apply absolute top-4 right-4 rounded-full dark:bg-background dark:hover:bg-muted;
+  }
+
+  /* Message Styles */
+  .message {
+    @apply flex w-full max-w-[95%] flex-col gap-2;
+  }
+
+  .message-is-user {
+    @apply ml-auto justify-end;
+  }
+
+  .message-is-assistant {
+    /* assistant styles */
+  }
+
+  .message-branch {
+    @apply grid w-full gap-2 [&>div]:pb-0;
+  }
+
+  .message-branch-content {
+    @apply grid gap-2 overflow-hidden [&>div]:pb-0;
+  }
+
+  /* CreateAgentForm Styles */
+  .create-form {
+    @apply flex gap-3 items-end;
+  }
+
+  .create-form-input {
+    @apply flex-1;
+  }
+
+  .create-form-textarea {
+    @apply min-h-[80px] resize-none;
+  }
+
+  .create-form-btn {
+    @apply h-[80px] px-6;
+  }
 }
 
 @keyframes animate-in {

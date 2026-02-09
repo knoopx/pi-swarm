@@ -160,9 +160,9 @@ function toSplitLines(lines: DiffLine[]): SplitLine[] {
 }
 
 const typeColors = {
-  issue: "bg-base08/20 text-base08 border-base08/30",
-  suggestion: "bg-base0C/20 text-base0C border-base0C/30",
-  question: "bg-base09/20 text-base09 border-base09/30",
+  issue: "review-comment-type-issue",
+  suggestion: "review-comment-type-suggestion",
+  question: "review-comment-type-question",
 };
 
 function InlineComment({
@@ -176,7 +176,7 @@ function InlineComment({
 }) {
   return (
     <div
-      className={`${className} my-1 p-2 rounded border ${typeColors[comment.type]}`}
+      className={`${className} review-inline-comment ${typeColors[comment.type]}`}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm">{comment.comment}</p>
@@ -341,19 +341,19 @@ export function ReviewMode({
 
   if (!diff) {
     return (
-      <div className={`flex items-center justify-center ${className}`}>
+      <div className={`review-empty ${className}`}>
         <p className="text-muted-foreground">No changes to review</p>
       </div>
     );
   }
 
   return (
-    <div className={`flex ${className}`}>
+    <div className={`review-container ${className}`}>
       {/* Sidebar */}
-      <div className="w-80 flex flex-col border-r bg-muted/20 shrink-0">
+      <div className="review-sidebar">
         <div className="flex flex-col flex-1 min-h-0">
-          <div className="p-2 border-b">
-            <span className="text-sm font-medium">Files</span>
+          <div className="review-sidebar-header">
+            <span className="review-sidebar-title">Files</span>
           </div>
           <ScrollArea className="flex-1">
             <FileTree
@@ -366,18 +366,16 @@ export function ReviewMode({
           </ScrollArea>
         </div>
 
-        <div className="flex flex-col border-t bg-card/30 max-h-[45%] min-h-[200px]">
-          <div className="p-3 border-b flex items-center justify-between">
-            <span className="font-medium">Review Comments</span>
+        <div className="review-comments-panel">
+          <div className="review-comments-header">
+            <span className="review-comments-title">Review Comments</span>
             <Badge variant="outline">{comments.length}</Badge>
           </div>
 
           <ScrollArea className="flex-1 min-h-0">
-            <div className="p-2 space-y-2">
+            <div className="review-comments-list">
               {comments.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No comments yet
-                </p>
+                <p className="review-comments-empty">No comments yet</p>
               ) : (
                 comments.map((c) => (
                   <div
@@ -403,7 +401,7 @@ export function ReviewMode({
           </ScrollArea>
 
           {comments.length > 0 && (
-            <div className="p-3 border-t">
+            <div className="review-comments-footer">
               <Button onClick={handleSubmit} className="w-full">
                 <Send className="h-4 w-4 mr-2" />
                 Send {comments.length} comment{comments.length !== 1 ? "s" : ""}
@@ -414,12 +412,12 @@ export function ReviewMode({
       </div>
 
       {/* Diff View */}
-      <div className="flex-1 flex flex-col overflow-hidden border-r">
-        <div className="p-2 border-b bg-muted/30 flex items-center justify-between">
-          <span className="text-sm font-medium">
+      <div className="review-diff-view">
+        <div className="review-diff-header">
+          <span className="review-diff-title">
             {files.length} file{files.length !== 1 ? "s" : ""} changed
           </span>
-          <div className="flex items-center gap-2">
+          <div className="review-diff-controls">
             <ButtonGroup>
               <Button
                 variant={viewMode === "unified" ? "secondary" : "ghost"}
@@ -441,24 +439,19 @@ export function ReviewMode({
           </div>
         </div>
         <ScrollArea className="flex-1">
-          <div className="p-2">
+          <div className="review-diff-content">
             {files.map((file) => (
-              <div
-                key={file.path}
-                className="mb-4 rounded-lg border overflow-hidden"
-              >
+              <div key={file.path} className="review-file-card">
                 <button
                   onClick={() => toggleFile(file.path)}
-                  className="w-full flex items-center gap-2 px-3 py-2 bg-muted/50 hover:bg-muted/70 text-left"
+                  className="review-file-header"
                 >
                   {expandedFiles.has(file.path) ? (
                     <ChevronDown className="h-4 w-4" />
                   ) : (
                     <ChevronRight className="h-4 w-4" />
                   )}
-                  <span className="font-mono text-sm flex-1 truncate">
-                    {file.path}
-                  </span>
+                  <span className="review-file-name">{file.path}</span>
                   {comments.filter((c) => c.file === file.path).length > 0 && (
                     <Badge variant="outline" className="text-xs">
                       {comments.filter((c) => c.file === file.path).length}
@@ -467,12 +460,10 @@ export function ReviewMode({
                 </button>
 
                 {expandedFiles.has(file.path) && (
-                  <div className="text-xs font-mono">
+                  <div className="review-hunk">
                     {file.hunks.map((hunk, hi) => (
                       <div key={hi}>
-                        <div className="px-3 py-1 bg-base0C/10 text-base0C text-xs">
-                          {hunk.header}
-                        </div>
+                        <div className="review-hunk-header">{hunk.header}</div>
                         {viewMode === "unified" ? (
                           <UnifiedView
                             hunk={hunk}
@@ -561,17 +552,15 @@ function UnifiedView({
         return (
           <div key={li}>
             <div
-              className={`group flex items-stretch hover:bg-muted/30 ${
+              className={`review-line group ${
                 line.type === "add"
-                  ? "bg-base0B/10"
+                  ? "review-line-add"
                   : line.type === "remove"
-                    ? "bg-base08/10"
+                    ? "review-line-remove"
                     : ""
-              } ${isActive ? "ring-1 ring-primary" : ""}`}
+              } ${isActive ? "review-line-active" : ""}`}
             >
-              <div className="w-12 px-2 py-0.5 text-right text-muted-foreground border-r border-border shrink-0">
-                {lineNumber || ""}
-              </div>
+              <div className="review-line-number">{lineNumber || ""}</div>
 
               <button
                 onClick={() => {
@@ -583,12 +572,12 @@ function UnifiedView({
                     });
                   }
                 }}
-                className="w-6 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-primary/20 shrink-0"
+                className="review-line-add-btn"
               >
                 <Plus className="h-3 w-3 text-primary" />
               </button>
 
-              <div className="flex-1 px-2 py-0.5 whitespace-pre overflow-x-auto">
+              <div className="review-line-content">
                 <span
                   className={
                     line.type === "add"
@@ -608,7 +597,7 @@ function UnifiedView({
               </div>
 
               {lineComments.length > 0 && (
-                <div className="w-6 flex items-center justify-center shrink-0">
+                <div className="review-line-comment-indicator">
                   <MessageSquare className="h-3 w-3 text-primary" />
                 </div>
               )}
@@ -673,18 +662,18 @@ function SplitView({
 
         return (
           <div key={pi}>
-            <div className="flex">
+            <div className="review-split-line">
               {/* Left side (old) */}
               <div
-                className={`flex-1 flex items-stretch border-r ${
+                className={`review-split-side review-split-side-left ${
                   pair.left?.type === "remove"
-                    ? "bg-base08/10"
+                    ? "review-line-remove"
                     : pair.left?.type === "context"
                       ? ""
                       : "bg-muted/20"
-                } ${isLeftActive ? "ring-1 ring-primary" : ""}`}
+                } ${isLeftActive ? "review-line-active" : ""}`}
               >
-                <div className="w-10 px-1 py-0.5 text-right text-muted-foreground border-r border-border shrink-0 text-xs">
+                <div className="review-split-line-number">
                   {leftLineNumber || ""}
                 </div>
                 {pair.left && (
@@ -698,12 +687,12 @@ function SplitView({
                         });
                       }
                     }}
-                    className="w-5 flex items-center justify-center opacity-0 hover:opacity-100 hover:bg-primary/20 shrink-0 group-hover:opacity-100"
+                    className="review-split-add-btn"
                   >
                     <Plus className="h-3 w-3 text-primary" />
                   </button>
                 )}
-                <div className="flex-1 px-1 py-0.5 whitespace-pre overflow-x-auto">
+                <div className="review-split-content">
                   <span
                     className={
                       pair.left?.type === "remove" ? "text-base08" : ""
@@ -716,15 +705,15 @@ function SplitView({
 
               {/* Right side (new) */}
               <div
-                className={`flex-1 flex items-stretch ${
+                className={`review-split-side ${
                   pair.right?.type === "add"
-                    ? "bg-base0B/10"
+                    ? "review-line-add"
                     : pair.right?.type === "context"
                       ? ""
                       : "bg-muted/20"
-                } ${isRightActive ? "ring-1 ring-primary" : ""}`}
+                } ${isRightActive ? "review-line-active" : ""}`}
               >
-                <div className="w-10 px-1 py-0.5 text-right text-muted-foreground border-r border-border shrink-0 text-xs">
+                <div className="review-split-line-number">
                   {rightLineNumber || ""}
                 </div>
                 {pair.right && (
@@ -738,12 +727,12 @@ function SplitView({
                         });
                       }
                     }}
-                    className="w-5 flex items-center justify-center opacity-0 hover:opacity-100 hover:bg-primary/20 shrink-0"
+                    className="review-split-add-btn"
                   >
                     <Plus className="h-3 w-3 text-primary" />
                   </button>
                 )}
-                <div className="flex-1 px-1 py-0.5 whitespace-pre overflow-x-auto">
+                <div className="review-split-content">
                   <span
                     className={pair.right?.type === "add" ? "text-base0B" : ""}
                   >
@@ -751,7 +740,7 @@ function SplitView({
                   </span>
                 </div>
                 {rightComments.length > 0 && (
-                  <div className="w-5 flex items-center justify-center shrink-0">
+                  <div className="review-line-comment-indicator">
                     <MessageSquare className="h-3 w-3 text-primary" />
                   </div>
                 )}
@@ -822,16 +811,16 @@ function CommentInput({
   onCancel: () => void;
 }) {
   return (
-    <div className="mx-2 my-2 p-2 rounded border bg-card">
-      <div className="flex gap-1 mb-2">
+    <div className="review-comment-input">
+      <div className="review-comment-type-selector">
         {(["issue", "suggestion", "question"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setCommentType(t)}
-            className={`px-2 py-0.5 rounded text-xs ${
+            className={`review-comment-type-btn ${
               commentType === t
                 ? typeColors[t]
-                : "bg-muted text-muted-foreground"
+                : "review-comment-type-btn-inactive"
             }`}
           >
             {t}
@@ -842,10 +831,10 @@ function CommentInput({
         value={commentText}
         onChange={(e) => setCommentText(e.target.value)}
         placeholder="Add your comment..."
-        className="min-h-[60px] text-sm mb-2"
+        className="review-comment-textarea"
         autoFocus
       />
-      <div className="flex gap-2">
+      <div className="review-comment-actions">
         <Button size="sm" onClick={addComment} disabled={!commentText.trim()}>
           Add
         </Button>

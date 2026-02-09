@@ -96,16 +96,14 @@ function ChangeBar({
   const delBars = Math.round(deletions * scale);
 
   return (
-    <div className="flex items-center gap-1">
-      <span className="text-xs text-muted-foreground w-8 text-right">
-        {total}
-      </span>
-      <div className="flex">
+    <div className="change-bar">
+      <span className="change-bar-count">{total}</span>
+      <div className="change-bar-container">
         {Array.from({ length: addBars }).map((_, i) => (
-          <div key={`add-${i}`} className="w-1.5 h-3 bg-base0B mr-px" />
+          <div key={`add-${i}`} className="change-bar-add" />
         ))}
         {Array.from({ length: delBars }).map((_, i) => (
-          <div key={`del-${i}`} className="w-1.5 h-3 bg-base08 mr-px" />
+          <div key={`del-${i}`} className="change-bar-del" />
         ))}
       </div>
     </div>
@@ -126,53 +124,42 @@ export function FilesList({ files, diffStat, className }: FilesListProps) {
   const totalDeletions = changes.reduce((sum, c) => sum + c.deletions, 0);
 
   if (files.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        No modified files
-      </div>
-    );
+    return <div className="files-list-empty">No modified files</div>;
   }
 
   return (
     <ScrollArea className={className}>
-      <div className="p-3">
+      <div className="files-list-container">
         {/* Summary */}
-        <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
-          <div className="text-sm font-medium">
+        <div className="files-list-summary">
+          <div className="files-list-summary-title">
             {files.length} file{files.length !== 1 ? "s" : ""} changed
           </div>
-          <div className="flex items-center gap-3 text-xs">
+          <div className="files-list-summary-stats">
             {totalAdditions > 0 && (
-              <span className="text-base0B">+{totalAdditions}</span>
+              <span className="files-list-additions">+{totalAdditions}</span>
             )}
             {totalDeletions > 0 && (
-              <span className="text-base08">-{totalDeletions}</span>
+              <span className="files-list-deletions">-{totalDeletions}</span>
             )}
           </div>
         </div>
 
         {/* File list */}
-        <div className="space-y-1">
+        <div className="files-list-items">
           {changes.map((change, i) => {
             const { dir, name } = getFileName(change.path);
             return (
-              <div
-                key={i}
-                className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/50 group"
-              >
+              <div key={i} className="files-list-item">
                 {getFileIcon(change)}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1 text-sm">
-                    {dir && (
-                      <span className="text-muted-foreground truncate">
-                        {dir}/
-                      </span>
-                    )}
-                    <span className="font-medium truncate">{name}</span>
+                <div className="files-list-item-path">
+                  <div className="files-list-item-path-inner">
+                    {dir && <span className="files-list-item-dir">{dir}/</span>}
+                    <span className="files-list-item-name">{name}</span>
                   </div>
                 </div>
                 {change.binary ? (
-                  <span className="text-xs text-muted-foreground">binary</span>
+                  <span className="files-list-item-binary">binary</span>
                 ) : (
                   <ChangeBar
                     additions={change.additions}

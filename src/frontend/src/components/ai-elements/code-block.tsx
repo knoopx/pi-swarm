@@ -52,8 +52,8 @@ export const CodeBlock = ({
   return (
     <div
       className={cn(
-        "relative w-full overflow-hidden rounded-md bg-base01 text-base05 [&_pre]:!bg-transparent [&_pre]:overflow-auto [&_pre]:p-3 [&_pre]:text-xs [&_code]:font-mono",
-        showLineNumbers && "[&_code]:pl-8",
+        "code-block",
+        showLineNumbers && "code-block-line-numbers",
         className,
       )}
       {...props}

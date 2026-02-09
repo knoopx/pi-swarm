@@ -199,11 +199,8 @@ function FileTreeNode({
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             className={cn(
-              "group flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-sm transition-colors",
-              "hover:bg-muted/60",
-              "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-muted/60",
-              isSelected && "bg-primary/10 text-primary",
-              "min-w-0",
+              "file-tree-node",
+              isSelected && "file-tree-node-selected",
             )}
             style={{ paddingLeft: `${level * 8 + 4}px` }}
           >
@@ -214,29 +211,29 @@ function FileTreeNode({
                     e.stopPropagation();
                     onToggleExpand(node.path);
                   }}
-                  className="flex items-center justify-center w-4 h-4 flex-shrink-0"
+                  className="file-tree-expand-btn"
                   aria-label={isExpanded ? "Collapse" : "Expand"}
                 >
                   {hasChildren ? (
                     isExpanded ? (
-                      <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                      <ChevronDown className="file-tree-expand-icon" />
                     ) : (
-                      <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                      <ChevronRight className="file-tree-expand-icon" />
                     )
                   ) : (
                     <div className="w-3 h-3" />
                   )}
                 </button>
                 {isExpanded ? (
-                  <FolderOpen className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                  <FolderOpen className="file-tree-folder-icon" />
                 ) : (
-                  <Folder className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                  <Folder className="file-tree-folder-icon" />
                 )}
               </>
             ) : (
               <>
                 <div className="w-4 h-4 flex-shrink-0" />
-                <div className="text-muted-foreground flex-shrink-0">
+                <div className="file-tree-file-icon-wrapper">
                   {getFileIcon(node.name)}
                 </div>
               </>
@@ -244,7 +241,7 @@ function FileTreeNode({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="truncate flex-1 select-none">{node.name}</span>
+                <span className="file-tree-node-name">{node.name}</span>
               </TooltipTrigger>
               <TooltipContent side="right" className="max-w-xs">
                 {node.path}
@@ -298,36 +295,31 @@ export function FileTree({
 
   if (treeData.length === 0) {
     return (
-      <div
-        className={cn(
-          "flex flex-col items-center justify-center p-8 text-center",
-          className,
-        )}
-      >
-        <File className="h-12 w-12 text-muted-foreground/50 mb-4" />
-        <p className="text-sm text-muted-foreground">No files to display</p>
+      <div className={cn("file-tree-empty", className)}>
+        <File className="file-tree-empty-icon" />
+        <p className="file-tree-empty-text">No files to display</p>
       </div>
     );
   }
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
-      <div className="p-2 border-b">
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+    <div className={cn("file-tree-container", className)}>
+      <div className="file-tree-search">
+        <div className="file-tree-search-wrapper">
+          <Search className="file-tree-search-icon" />
           <Input
             type="text"
             placeholder="Search files..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-7 pr-7 h-7 text-sm"
+            className="file-tree-search-input"
           />
           {searchTerm && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setSearchTerm("")}
-              className="absolute right-0.5 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+              className="file-tree-search-clear"
             >
               <X className="h-3 w-3" />
             </Button>
@@ -335,8 +327,8 @@ export function FileTree({
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
-        <div className="p-1">
+      <div className="file-tree-content">
+        <div className="file-tree-items">
           {treeData.map((node) => (
             <FileTreeNode
               key={node.path}

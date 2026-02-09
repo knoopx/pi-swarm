@@ -42,22 +42,22 @@ export function CreateAgentForm({ onCreate }: CreateAgentFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-3 items-end">
-      <div className="flex-1">
+    <form onSubmit={handleSubmit} className="create-form">
+      <div className="create-form-input">
         <Textarea
           autoFocus
           placeholder="Describe the task for a new agent... (Ctrl+Enter to submit)"
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="min-h-[80px] resize-none"
+          className="create-form-textarea"
         />
       </div>
       <Button
         type="submit"
         disabled={creating || !instruction.trim()}
         size="lg"
-        className="h-[80px] px-6"
+        className="create-form-btn"
       >
         {creating ? (
           <span className="animate-pulse">...</span>

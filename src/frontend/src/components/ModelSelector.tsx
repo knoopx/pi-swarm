@@ -59,8 +59,8 @@ export function ModelSelector({
           aria-expanded={open}
           disabled={disabled}
           className={cn(
-            "justify-between font-mono text-xs",
-            !selectedModel && "text-muted-foreground",
+            "model-selector-btn",
+            !selectedModel && "model-selector-btn-placeholder",
             className,
           )}
         >
@@ -68,10 +68,7 @@ export function ModelSelector({
           <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        className="w-[280px] p-0 bg-card border-border"
-        align="start"
-      >
+      <PopoverContent className="model-selector-popover" align="start">
         <Command>
           <CommandInput placeholder="Search models..." className="h-9" />
           <CommandList>
@@ -95,7 +92,7 @@ export function ModelSelector({
                           value === modelValue ? "opacity-100" : "opacity-0",
                         )}
                       />
-                      <span className="font-mono text-xs truncate">
+                      <span className="model-selector-item">
                         {model.modelId}
                       </span>
                     </CommandItem>

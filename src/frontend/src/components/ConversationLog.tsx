@@ -96,7 +96,7 @@ export function ConversationLog({
     <Conversation className={className}>
       <ConversationContent className="gap-4">
         {isEmpty && status === "running" && (
-          <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+          <div className="conversation-loading">
             <span>Starting...</span>
           </div>
         )}
@@ -104,10 +104,7 @@ export function ConversationLog({
         {events.map((event: ConversationEvent, i: number) => {
           if (event.type === "processing") {
             return (
-              <div
-                key={i}
-                className="flex items-center justify-center gap-2 py-8 text-muted-foreground"
-              >
+              <div key={i} className="conversation-loading">
                 <span>{event.content}</span>
               </div>
             );
@@ -153,14 +150,14 @@ export function ConversationLog({
               );
             const colorClass =
               event.variant === "error"
-                ? "text-destructive border-destructive/30 bg-destructive/10"
+                ? "conversation-system-error"
                 : event.variant === "warning"
-                  ? "text-base09 border-base09/30 bg-base09/10"
-                  : "text-muted-foreground border-border bg-muted/30";
+                  ? "conversation-system-warning"
+                  : "conversation-system-info";
             return (
               <div
                 key={i}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md border text-sm ${colorClass}`}
+                className={`conversation-system-message ${colorClass}`}
               >
                 {icon}
                 <span>{event.content}</span>

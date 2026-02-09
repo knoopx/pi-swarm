@@ -235,7 +235,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
         onRefreshFiles={fetchWorkspaceFiles}
       />
 
-      <div className="h-screen flex flex-col bg-background">
+      <div className="app-layout">
         <AppHeader
           cwd={cwd}
           connected={connected}
@@ -244,11 +244,11 @@ Output ONLY the improved task specification, ready to be used as instructions fo
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />
 
-        <div className="flex-1 flex overflow-hidden">
+        <div className="app-main">
           {/* Mobile overlay */}
           {sidebarOpen && (
             <div
-              className="fixed inset-0 bg-black/50 lg:hidden z-40"
+              className="app-mobile-overlay"
               onClick={() => setSidebarOpen(false)}
             />
           )}
@@ -274,7 +274,7 @@ Output ONLY the improved task specification, ready to be used as instructions fo
             className={`${sidebarOpen ? "block" : "hidden"} lg:block`}
           />
 
-          <main className="flex-1 flex flex-col overflow-hidden bg-background">
+          <main className="app-main-content">
             {selectedAgent ? (
               <AgentWorkspace
                 agent={selectedAgent}

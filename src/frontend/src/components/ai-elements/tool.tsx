@@ -55,10 +55,7 @@ const containsAnsi = (str: string): boolean => /\x1b\[[0-9;]*m/.test(str);
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
 export const Tool = ({ className, ...props }: ToolProps) => (
-  <Collapsible
-    className={cn("group not-prose mb-4 w-full rounded-md border", className)}
-    {...props}
-  />
+  <Collapsible className={cn("tool", className)} {...props} />
 );
 
 export type ToolPart = ToolUIPart | DynamicToolUIPart;
@@ -129,27 +126,17 @@ export const ToolHeader = ({
   const firstParamPreview = useMemo(() => getFirstParamPreview(input), [input]);
 
   return (
-    <CollapsibleTrigger
-      className={cn(
-        "flex w-full items-center justify-between gap-4 p-3",
-        className,
-      )}
-      {...props}
-    >
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <WrenchIcon className="size-4 shrink-0 text-muted-foreground" />
-        <span className="shrink-0 font-medium text-sm">
-          {title ?? derivedName}
-        </span>
+    <CollapsibleTrigger className={cn("tool-header", className)} {...props}>
+      <div className="tool-header-left">
+        <WrenchIcon className="tool-header-icon" />
+        <span className="tool-header-title">{title ?? derivedName}</span>
         {firstParamPreview && (
-          <span className="truncate text-muted-foreground text-xs">
-            {firstParamPreview}
-          </span>
+          <span className="tool-header-preview">{firstParamPreview}</span>
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="tool-header-right">
         {getStatusBadge(state)}
-        <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+        <ChevronDownIcon className="tool-header-chevron" />
       </div>
     </CollapsibleTrigger>
   );
@@ -158,13 +145,7 @@ export const ToolHeader = ({
 export type ToolContentProps = ComponentProps<typeof CollapsibleContent>;
 
 export const ToolContent = ({ className, ...props }: ToolContentProps) => (
-  <CollapsibleContent
-    className={cn(
-      "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 space-y-4 p-4 text-popover-foreground outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
-      className,
-    )}
-    {...props}
-  />
+  <CollapsibleContent className={cn("tool-content", className)} {...props} />
 );
 
 export type ToolInputProps = ComponentProps<"div"> & {
@@ -181,11 +162,9 @@ export const ToolInput = ({ className, input, ...props }: ToolInputProps) => {
   }, [input]);
 
   return (
-    <div className={cn("space-y-2 overflow-hidden", className)} {...props}>
-      <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-        Parameters
-      </h4>
-      <div className="rounded-md bg-muted/50 overflow-hidden">
+    <div className={cn("tool-section", className)} {...props}>
+      <h4 className="tool-section-title">Parameters</h4>
+      <div className="tool-section-content">
         <CodeBlock code={formattedInput} language="json" />
       </div>
     </div>
@@ -264,7 +243,7 @@ export const ToolOutput = ({
         const formatted = JSON.stringify(output, null, 2);
         return <CodeBlock code={formatted} language="json" />;
       } catch {
-        return <pre className="p-3 text-sm font-mono">{String(output)}</pre>;
+        return <pre className="tool-output-pre">{String(output)}</pre>;
       }
     }
 
@@ -291,11 +270,7 @@ export const ToolOutput = ({
       }
 
       // Plain text
-      return (
-        <pre className="whitespace-pre-wrap break-words p-3 text-sm font-mono">
-          {output}
-        </pre>
-      );
+      return <pre className="tool-output-pre">{output}</pre>;
     }
 
     return <div>{String(output)}</div>;
@@ -306,22 +281,16 @@ export const ToolOutput = ({
   }
 
   return (
-    <div className={cn("space-y-2", className)} {...props}>
-      <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-        {errorText ? "Error" : "Result"}
-      </h4>
+    <div className={cn("tool-section", className)} {...props}>
+      <h4 className="tool-section-title">{errorText ? "Error" : "Result"}</h4>
       <div
         className={cn(
-          "overflow-x-auto rounded-md text-xs [&_table]:w-full",
-          errorText
-            ? "bg-destructive/10 text-destructive"
-            : "bg-muted/50 text-foreground",
+          "tool-output",
+          errorText ? "tool-output-error" : "tool-output-success",
         )}
       >
         {errorText ? (
-          <div className="p-3 font-mono whitespace-pre-wrap break-words">
-            {errorText}
-          </div>
+          <div className="tool-output-error-text">{errorText}</div>
         ) : (
           renderedOutput
         )}
