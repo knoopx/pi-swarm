@@ -14,7 +14,7 @@ import {
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-
+import { StatusIndicator } from "./ui/status-indicator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
   AlertDialog,
@@ -25,13 +25,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "./ui/alert-dialog";
 import { ConversationLog } from "./ConversationLog";
 import { ReviewMode, type ReviewComment } from "./ReviewMode";
 import { ModelSelector } from "./ModelSelector";
 import { CompletableTextarea } from "./CompletableTextarea";
-import { statusConfig } from "../lib/status-config";
+import { statusConfig, getVariantClass } from "../lib/status-config";
 import { parseModelString } from "../lib/shared";
 import type { AccumulatedUsage } from "../lib/conversation-state";
 import type { Agent, ModelInfo, CompletionItem } from "../types";
@@ -95,26 +94,18 @@ export function AgentWorkspace({
       <div className="h-16 lg:h-14 border-b bg-gradient-to-r from-card to-card/80 backdrop-blur-sm flex items-center justify-between px-4 shrink-0 shadow-sm">
         <div className="flex items-center gap-4 min-w-0 flex-1">
           <div
-            className={`p-3 rounded-xl ${
-              statusConfig[agent.status].variant === "default"
-                ? "bg-base07/20 text-base07"
-                : statusConfig[agent.status].variant === "secondary"
-                  ? "bg-base0B/20 text-base0B"
-                  : statusConfig[agent.status].variant === "destructive"
-                    ? "bg-base08/20 text-base08"
-                    : statusConfig[agent.status].variant === "outline"
-                      ? "bg-base09/20 text-base09"
-                      : "bg-base02/20 text-base04"
-            } shadow-sm`}
+            className={`p-3 rounded-xl shadow-sm ${getVariantClass("agent-status-icon", statusConfig[agent.status].variant)}`}
           >
-            {statusConfig[agent.status].icon}
+            <StatusIndicator
+              status={statusConfig[agent.status].status}
+              size="default"
+            />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3 mb-1">
               <h2 className="font-bold truncate text-base lg:text-lg text-foreground">
                 {agent.name}
               </h2>
-              <StatusBadge status={agent.status} />
               {changedFilesCount > 0 && (
                 <Badge
                   variant="outline"
@@ -288,36 +279,6 @@ export function AgentWorkspace({
   );
 }
 
-function StatusBadge({ status }: { status: Agent["status"] }) {
-  const config = statusConfig[status];
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Badge
-          variant={config.variant}
-          className={`gap-1.5 px-3 py-1.5 text-xs font-medium shadow-sm transition-all hover:shadow-md ${
-            config.variant === "default"
-              ? "bg-base07/10 text-base07 border-base07/20"
-              : config.variant === "secondary"
-                ? "bg-base0B/10 text-base0B border-base0B/20"
-                : config.variant === "destructive"
-                  ? "bg-base08/10 text-base08 border-base08/20"
-                  : config.variant === "outline"
-                    ? "bg-base09/10 text-base09 border-base09/20"
-                    : "bg-base02/10 text-base04 border-base02/20"
-          }`}
-        >
-          {config.icon}
-          {config.label}
-        </Badge>
-      </TooltipTrigger>
-      <TooltipContent className="bg-popover border shadow-lg">
-        {config.description}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
 function AgentActions({
   agent,
   isSpecAgent,
@@ -448,9 +409,10 @@ function InstructInput({
   return (
     <div className="flex gap-3 items-end">
       {showRunningBadge && (
-        <Badge variant="secondary" className="mb-3 text-xs px-2 py-0.5">
-          Running
-        </Badge>
+        <div className="flex items-center gap-1.5 mb-3 text-xs text-base0C">
+          <StatusIndicator status="running" size="xs" />
+          <span>Running</span>
+        </div>
       )}
       {models.length > 0 && selectedModel && onModelChange && (
         <ModelSelector
