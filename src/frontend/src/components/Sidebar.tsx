@@ -1,7 +1,23 @@
-import { Bot, Loader2, Send, Wand2, ListPlus, Search } from "lucide-react";
+import {
+  Bot,
+  Loader2,
+  Send,
+  Wand2,
+  ListPlus,
+  Search,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { ScrollArea } from "./ui/scroll-area";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "./ui/collapsible";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 import { CompletableTextarea } from "./CompletableTextarea";
 import { ModelSelector } from "./ModelSelector";
 import { statusConfig, sortAgents } from "../lib/status-config";
@@ -63,6 +79,17 @@ export function Sidebar({
     (agent) =>
       agent.name.toLowerCase().includes(agentSearch.toLowerCase()) ||
       agent.instruction.toLowerCase().includes(agentSearch.toLowerCase()),
+  );
+
+  // Group agents by status
+  const groupedAgents = filteredAgents.reduce(
+    (acc, agent) => {
+      const status = agent.status;
+      if (!acc[status]) acc[status] = [];
+      acc[status].push(agent);
+      return acc;
+    },
+    {} as Record<string, Agent[]>,
   );
 
   return (
@@ -164,7 +191,7 @@ export function Sidebar({
       )}
 
       {/* Agent List */}
-      <div className="sidebar-agent-list">
+      <ScrollArea className="sidebar-agent-list">
         {loading ? (
           <div className="sidebar-loading">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -182,18 +209,41 @@ export function Sidebar({
             </p>
           </div>
         ) : (
-          <div className="p-2 space-y-1">
-            {filteredAgents.map((agent) => (
-              <AgentListItem
-                key={agent.id}
-                agent={agent}
-                isSelected={selectedId === agent.id}
-                onSelect={() => onSelectAgent(agent.id)}
-              />
-            ))}
+          <div className="p-2 space-y-2">
+            {Object.entries(statusConfig).map(([status, config]) => {
+              const agentsInStatus = groupedAgents[status] || [];
+              if (agentsInStatus.length === 0) return null;
+
+              return (
+                <Collapsible key={status} defaultOpen={status === "running"}>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-muted/50 rounded-md transition-colors">
+                    <div className="flex items-center gap-2">
+                      {config.icon}
+                      <span className="text-sm font-medium">
+                        {config.label}
+                      </span>
+                      <Badge variant="secondary" className="text-xs">
+                        {agentsInStatus.length}
+                      </Badge>
+                    </div>
+                    <ChevronDown className="h-4 w-4" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1 mt-1">
+                    {agentsInStatus.map((agent) => (
+                      <AgentListItem
+                        key={agent.id}
+                        agent={agent}
+                        isSelected={selectedId === agent.id}
+                        onSelect={() => onSelectAgent(agent.id)}
+                      />
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })}
           </div>
         )}
-      </div>
+      </ScrollArea>
     </aside>
   );
 }
@@ -211,47 +261,107 @@ function AgentListItem({
   const modifiedFilesCount = agent.modifiedFiles?.length || 0;
 
   return (
-    <button
-      onClick={onSelect}
-      className={`sidebar-agent-item group ${
-        isSelected
-          ? "sidebar-agent-item-selected"
-          : "sidebar-agent-item-unselected"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div
-            className={`p-2 rounded-lg transition-colors ${
-              config.variant === "default"
-                ? "sidebar-agent-icon-default"
-                : config.variant === "secondary"
-                  ? "sidebar-agent-icon-secondary"
-                  : config.variant === "destructive"
-                    ? "sidebar-agent-icon-destructive"
-                    : config.variant === "outline"
-                      ? "sidebar-agent-icon-outline"
-                      : "sidebar-agent-icon-fallback"
-            }`}
-          >
-            {config.icon}
-          </div>
-          <div className="min-w-0 flex-1">
-            <span className="sidebar-agent-name">{agent.name}</span>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant={config.variant} className="text-xs px-2 py-0.5">
-                {config.label}
-              </Badge>
-              {modifiedFilesCount > 0 && (
-                <Badge variant="outline" className="text-xs px-2 py-0.5">
-                  {modifiedFilesCount} files
-                </Badge>
-              )}
+    <HoverCard>
+      <HoverCardTrigger asChild>
+        <button
+          onClick={onSelect}
+          className={`sidebar-agent-item group ${
+            isSelected
+              ? "sidebar-agent-item-selected"
+              : "sidebar-agent-item-unselected"
+          }`}
+        >
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div
+                className={`p-2 rounded-lg transition-colors ${
+                  config.variant === "default"
+                    ? "sidebar-agent-icon-default"
+                    : config.variant === "secondary"
+                      ? "sidebar-agent-icon-secondary"
+                      : config.variant === "destructive"
+                        ? "sidebar-agent-icon-destructive"
+                        : config.variant === "outline"
+                          ? "sidebar-agent-icon-outline"
+                          : "sidebar-agent-icon-fallback"
+                }`}
+              >
+                {config.icon}
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="sidebar-agent-name">{agent.name}</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge
+                    variant={config.variant}
+                    className="text-xs px-2 py-0.5"
+                  >
+                    {config.label}
+                  </Badge>
+                  {modifiedFilesCount > 0 && (
+                    <Badge variant="outline" className="text-xs px-2 py-0.5">
+                      {modifiedFilesCount} files
+                    </Badge>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
+          <p className="sidebar-agent-description">{agent.instruction}</p>
+        </button>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-80" side="right">
+        <div className="space-y-3">
+          <div>
+            <h4 className="font-semibold text-sm">{agent.name}</h4>
+            <p className="text-xs text-muted-foreground mt-1">
+              {agent.instruction}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <span className="text-muted-foreground">Status:</span>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant={config.variant} className="text-xs px-2 py-0.5">
+                  {config.label}
+                </Badge>
+              </div>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Model:</span>
+              <p className="mt-1 font-mono text-xs">
+                {agent.provider}/{agent.model}
+              </p>
+            </div>
+            {agent.conversation.usage.totalTokens > 0 && (
+              <>
+                <div>
+                  <span className="text-muted-foreground">Tokens:</span>
+                  <p className="mt-1">
+                    {agent.conversation.usage.totalTokens.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Cost:</span>
+                  <p className="mt-1">
+                    ${agent.conversation.usage.totalCost.toFixed(4)}
+                  </p>
+                </div>
+              </>
+            )}
+            {modifiedFilesCount > 0 && (
+              <div className="col-span-2">
+                <span className="text-muted-foreground">Modified files:</span>
+                <p className="mt-1 text-xs">
+                  {agent.modifiedFiles?.slice(0, 3).join(", ")}
+                  {agent.modifiedFiles &&
+                    agent.modifiedFiles.length > 3 &&
+                    "..."}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-      <p className="sidebar-agent-description">{agent.instruction}</p>
-    </button>
+      </HoverCardContent>
+    </HoverCard>
   );
 }

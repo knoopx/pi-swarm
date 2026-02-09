@@ -15,15 +15,18 @@ import {
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Progress } from "./ui/progress";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./ui/alert-dialog";
 import { ConversationLog } from "./ConversationLog";
 import { ReviewMode, type ReviewComment } from "./ReviewMode";
 import { ModelSelector } from "./ModelSelector";
@@ -121,6 +124,14 @@ export function AgentWorkspace({
                 </Badge>
               )}
             </div>
+            {agent.status === "running" && (
+              <div className="mt-2">
+                <Progress value={undefined} className="h-1 w-full" />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Agent is processing your request...
+                </p>
+              </div>
+            )}
             <p className="text-sm text-muted-foreground truncate max-w-lg hidden sm:block">
               {agent.instruction.slice(0, 120)}
               {agent.instruction.length > 120 ? "..." : ""}
@@ -252,11 +263,11 @@ export function AgentWorkspace({
         </div>
       )}
 
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Agent</DialogTitle>
-            <DialogDescription>
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Agent</AlertDialogTitle>
+            <AlertDialogDescription>
               Are you sure you want to delete the agent "{agent.name}"? This
               action cannot be undone.
               {agent.status === "completed" && changedFilesCount > 0 && (
@@ -265,27 +276,22 @@ export function AgentWorkspace({
                   {changedFilesCount !== 1 ? "s" : ""} that will be lost.
                 </span>
               )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
               onClick={() => {
                 onDelete();
                 setShowDeleteDialog(false);
               }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
