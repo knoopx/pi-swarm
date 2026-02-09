@@ -77,7 +77,7 @@ export default function App() {
   useEffect(() => {
     if (!selectedAgent) return;
     getDiff(selectedAgent.id);
-  }, [selectedAgent?.modifiedFiles, selectedAgent?.id, getDiff]);
+  }, [selectedAgent?.updatedAt, selectedAgent?.id, getDiff]);
 
   const changedFilesCount = useMemo(() => {
     if (!diff) return 0;
